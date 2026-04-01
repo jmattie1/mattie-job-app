@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mattie's Job Board — Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --amber:#F59E0B;--amber-light:#FEF3C7;--amber-dark:#D97706;
+  --charcoal:#1C1C1E;--gray:#6B7280;--gray-light:#F3F4F6;--gray-mid:#E5E7EB;
+  --green:#22C55E;--green-light:#DCFCE7;--red:#EF4444;--red-light:#FEE2E2;
+  --white:#FFFFFF;--shadow:0 2px 8px rgba(0,0,0,.08);--radius:14px;
+}
+body{font-family:'Nunito',sans-serif;color:var(--charcoal);background:var(--gray-light);min-height:100vh}
+h1,h2,h3{font-weight:800}
+
+.header{background:var(--charcoal);color:var(--white);padding:20px 24px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+.header .logo{font-size:1.8rem}
+.header h1{font-size:1.25rem}
+.header .sub{font-size:.8rem;font-weight:600;color:var(--amber);margin-top:2px}
+
+.dashboard{padding:20px;max-width:900px;margin:0 auto}
+.dash-title{font-size:1rem;color:var(--gray);margin-bottom:14px;font-weight:700}
+
+.job-card{background:var(--white);border-radius:var(--radius);padding:18px;
+  margin-bottom:14px;box-shadow:var(--shadow);cursor:pointer;
+  border-left:5px solid var(--gray-mid);transition:transform .1s}
+.job-card:active{transform:scale(.98)}
+.job-card.s-done{border-left-color:var(--green)}
+.job-card.s-wip{border-left-color:var(--amber)}
+.job-card.s-none{border-left-color:var(--red)}
+.job-card .name{font-size:1.1rem;font-weight:800}
+.job-card .addr{font-size:.85rem;color:var(--gray);margin-top:2px}
+.job-card .bar-wrap{margin-top:10px}
+.job-card .bar{height:10px;background:var(--gray-light);border-radius:5px;overflow:hidden}
+.job-card .bar-fill{height:100%;border-radius:5px}
+.job-card.s-done .bar-fill{background:var(--green)}
+.job-card.s-wip .bar-fill{background:var(--amber)}
+.job-card.s-none .bar-fill{background:var(--red)}
+.job-card .bar-label{font-size:.75rem;color:var(--gray);margin-top:4px;font-weight:700}
+
+.detail{display:none;padding:0 0 24px}
+.detail.active{display:block}
+.back-btn{display:inline-flex;align-items:center;gap:6px;border:none;background:none;
+  font-family:inherit;font-size:.95rem;font-weight:700;color:var(--amber);cursor:pointer;padding:14px 20px;min-height:48px}
+.tabs{display:flex;border-bottom:2px solid var(--gray-mid);padding:0 20px;background:var(--white)}
+.tabs button{flex:1;border:none;background:none;padding:12px 4px;font-family:inherit;
+  font-size:.8rem;font-weight:700;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent}
+.tabs button.active{color:var(--amber);border-bottom-color:var(--amber)}
+.dpanel{display:none;padding:16px 20px 24px;max-width:900px;margin:0 auto;animation:fadeIn .2s}
+.dpanel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.card{background:var(--white);border:2px solid var(--gray-mid);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.info-row{padding:12px 0;border-bottom:1px solid var(--gray-mid)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:.75rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
+.info-value{font-size:1.1rem;margin-top:2px;font-weight:600}
+
+.progress-wrap{margin-bottom:16px}
+.progress-text{font-size:.9rem;font-weight:700;margin-bottom:6px;color:var(--charcoal)}
+.pbar{height:14px;background:var(--gray-light);border-radius:7px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--amber),var(--green));border-radius:7px;transition:width .4s}
+
+.check-ro{display:flex;align-items:center;gap:12px;padding:14px;
+  border:2px solid var(--gray-mid);border-radius:var(--radius);margin-bottom:10px;min-height:56px}
+.check-ro.checked{border-color:var(--green);background:var(--green-light)}
+.chk-icon{width:32px;height:32px;border-radius:8px;border:2px solid var(--gray-mid);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
+.check-ro.checked .chk-icon{background:var(--green);border-color:var(--green);color:var(--white)}
+.chk-label .item-name{font-weight:700;font-size:1rem}
+.chk-label .item-meta{font-size:.75rem;color:var(--gray);margin-top:2px}
+.chk-emoji{font-size:1.3rem;flex-shrink:0;margin-left:auto}
+
+.section-title{font-size:1.05rem;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:10px}
+.photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:2px solid var(--gray-mid);cursor:pointer}
+.photo-count{font-size:.8rem;color:var(--gray);font-weight:600;margin-left:auto}
+
+.dl-btn{display:inline-flex;align-items:center;gap:6px;background:var(--amber);color:var(--white);
+  border:none;border-radius:10px;padding:12px 18px;font-family:inherit;font-size:.9rem;font-weight:700;
+  cursor:pointer;min-height:48px;transition:transform .1s;margin-bottom:6px}
+.dl-btn:active{transform:scale(.97)}
+.dl-btn:disabled{opacity:.5;cursor:default}
+
+.empty{text-align:center;padding:60px 20px;color:var(--gray)}
+.empty .icon{font-size:3rem;margin-bottom:12px}
+.empty-photos{color:var(--gray);font-size:.85rem;margin-top:8px;font-style:italic}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:default}
+.lightbox img{max-width:95%;max-height:75vh;border-radius:8px;cursor:default}
+.lightbox .lb-actions{display:flex;gap:10px}
+.lightbox .lb-btn{background:var(--amber);color:var(--white);border:none;border-radius:10px;
+  padding:12px 24px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-height:48px}
+.lightbox .lb-close{background:rgba(255,255,255,.15);color:var(--white)}
+
+.footer{text-align:center;padding:20px;font-size:.75rem;color:var(--gray)}
+.footer a{color:var(--amber-dark);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">🪵</span>
+  <div><h1>Mattie's Job Board</h1><div class="sub">Mattie's Hardwood Flooring</div></div>
+</div>
+
+<div id="dashboard" class="dashboard">
+  <div class="dash-title">Active Jobs</div>
+  <div id="job-cards"></div>
+</div>
+
+<div id="detail" class="detail">
+  <button class="back-btn" onclick="showDash()">← Back to Dashboard</button>
+  <div class="tabs">
+    <button class="active" onclick="dtab('d-info',this)">Job Info</button>
+    <button onclick="dtab('d-punch',this)">Punch List</button>
+    <button onclick="dtab('d-photos',this)">Photos</button>
+  </div>
+  <div id="d-info" class="dpanel active">
+    <div class="card">
+      <div class="info-row"><div class="info-label">Job Name</div><div class="info-value" id="d-name">—</div></div>
+      <div class="info-row"><div class="info-label">Address</div><div class="info-value" id="d-addr">—</div></div>
+    </div>
+  </div>
+  <div id="d-punch" class="dpanel">
+    <div class="progress-wrap">
+      <div class="progress-text" id="d-prog-text">0 of 9 complete</div>
+      <div class="pbar"><div class="pfill" id="d-prog-fill" style="width:0%"></div></div>
+    </div>
+    <div id="d-checks"></div>
+  </div>
+  <div id="d-photos" class="dpanel">
+    <div class="card">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div class="section-title" style="margin-bottom:0">📸 Before Photos</div>
+        <span class="photo-count" id="d-count-before">0 photos</span>
+      </div>
+      <button class="dl-btn" id="dl-before" onclick="downloadAll('before')">⬇ Download All — Full Quality</button>
+      <div class="photo-grid" id="d-before"></div>
+      <p class="empty-photos" id="d-before-empty" style="display:none">No photos yet.</p>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div class="section-title" style="margin-bottom:0">✅ After Photos</div>
+        <span class="photo-count" id="d-count-after">0 photos</span>
+      </div>
+      <button class="dl-btn" id="dl-after" onclick="downloadAll('after')">⬇ Download All — Full Quality</button>
+      <div class="photo-grid" id="d-after"></div>
+      <p class="empty-photos" id="d-after-empty" style="display:none">No photos yet.</p>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">Mattie's Hardwood Flooring · <a href="https://mattieshardwoodflooring.com">mattieshardwoodflooring.com</a></footer>
+<script>
+var STORAGE_KEY = 'mattie_jobs_v3';
+var PHOTO_KEY = 'mattie_photos_v3';
+
+var CHECKLIST_ITEMS = [
+  { key: "trash",       emoji: "🗑️",  label: "Pick up trash" },
+  { key: "sweep",       emoji: "🧹", label: "Sweep the floors" },
+  { key: "nailHeads",   emoji: "🔨", label: "Fill nail heads" },
+  { key: "reducers",    emoji: "🚪", label: "Install reducers" },
+  { key: "baseboards",  emoji: "📋", label: "Reinstall baseboards" },
+  { key: "tools",       emoji: "🧰", label: "Remember all tools" },
+  { key: "powerCords",  emoji: "🔌", label: "Remember power cords" },
+  { key: "cleaningKit", emoji: "🧴", label: "Leave cleaning kit" },
+  { key: "photo",       emoji: "📷", label: "Take a photo" }
+];
+
+function makeSeedJob() {
+  return {
+    jobId: "job_001", jobName: "The Hendersons",
+    address: "123 Oak Street, Petaluma CA", status: "active",
+    checklist: {
+      trash:{checked:false,by:"",time:""},sweep:{checked:false,by:"",time:""},
+      nailHeads:{checked:false,by:"",time:""},reducers:{checked:false,by:"",time:""},
+      baseboards:{checked:false,by:"",time:""},tools:{checked:false,by:"",time:""},
+      powerCords:{checked:false,by:"",time:""},cleaningKit:{checked:false,by:"",time:""},
+      photo:{checked:false,by:"",time:""}
+    }
+  };
+}
+
+var _storageOK = false;
+var _memStore = {};
+
+(function testStorage() {
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+    _storageOK = true;
+  } catch(e) {
+    _storageOK = false;
+    console.warn('localStorage unavailable.');
+  }
+})();
+
+function storageGet(key) {
+  if (_storageOK) { try { return localStorage.getItem(key); } catch(e) {} }
+  return _memStore[key] || null;
+}
+
+function storageSet(key, val) {
+  if (_storageOK) { try { localStorage.setItem(key, val); return; } catch(e) {} }
+  _memStore[key] = val;
+}
+
+function loadJobs() {
+  try {
+    var raw = storageGet(STORAGE_KEY);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        for (var i = 0; i < parsed.length; i++) {
+          var j = parsed[i];
+          if (!j.jobName && j.clientName) j.jobName = j.clientName;
+          if (!j.jobName && j.teamId) j.jobName = j.teamId;
+          if (!j.jobName) j.jobName = 'Job ' + (i + 1);
+          if (!j.address) j.address = '';
+          if (!j.jobId) j.jobId = 'job_' + Date.now() + '_' + i;
+          if (!j.checklist) j.checklist = makeSeedJob().checklist;
+        }
+        storageSet(STORAGE_KEY, JSON.stringify(parsed));
+        return parsed;
+      }
+    }
+  } catch(e) { console.error('Error loading jobs:', e); }
+  var seeded = [makeSeedJob()];
+  storageSet(STORAGE_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
+function loadPhotos(jobId) {
+  try {
+    var raw = storageGet(PHOTO_KEY + '_' + jobId);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { before: [], after: [] };
+}
+
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function countDone(j) {
+  var n = 0;
+  for (var k in j.checklist) {
+    if (j.checklist[k] && j.checklist[k].checked) n++;
+  }
+  return n;
+}
+
+var jobs = loadJobs();
+var curId = null;
+
+function renderDash() {
+  jobs = loadJobs();
+  var container = document.getElementById('job-cards');
+  container.innerHTML = '';
+  if (!jobs.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No jobs yet.</p></div>';
+    return;
+  }
+  for (var i = 0; i < jobs.length; i++) {
+    (function(j) {
+      var done = countDone(j);
+      var cls = done === 9 ? 's-done' : done === 0 ? 's-none' : 's-wip';
+      var card = document.createElement('div');
+      card.className = 'job-card ' + cls;
+      card.innerHTML =
+        '<div><div class="name">' + esc(j.jobName) + '</div>' +
+        '<div class="addr">' + esc(j.address) + '</div></div>' +
+        '<div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:' + Math.round(done/9*100) + '%"></div></div>' +
+        '<div class="bar-label">' + done + ' of 9 complete</div></div>';
+      card.onclick = function() { openDetail(j.jobId); };
+      container.appendChild(card);
+    })(jobs[i]);
+  }
+}
+
+function openDetail(id) {
+  curId = id;
+  jobs = loadJobs();
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('detail').classList.add('active');
+  var tabBtns = document.querySelectorAll('.tabs button');
+  for (var i = 0; i < tabBtns.length; i++) tabBtns[i].classList.toggle('active', i === 0);
+  var panels = document.querySelectorAll('.dpanel');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.toggle('active', i === 0);
+  renderDInfo(); renderDPunch(); renderDPhotos();
+}
+
+function showDash() {
+  document.getElementById('detail').classList.remove('active');
+  document.getElementById('dashboard').style.display = 'block';
+  renderDash();
+}
+
+function dtab(id, btn) {
+  var panels = document.querySelectorAll('.dpanel');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  var btns = document.querySelectorAll('.tabs button');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+}
+
+function getJ() {
+  for (var i = 0; i < jobs.length; i++) {
+    if (jobs[i].jobId === curId) return jobs[i];
+  }
+  return null;
+}
+
+function renderDInfo() {
+  var j = getJ(); if (!j) return;
+  document.getElementById('d-name').textContent = j.jobName;
+  document.getElementById('d-addr').textContent = j.address;
+}
+
+function renderDPunch() {
+  var j = getJ(); if (!j) return;
+  var container = document.getElementById('d-checks');
+  container.innerHTML = '';
+  var done = 0;
+  for (var i = 0; i < CHECKLIST_ITEMS.length; i++) {
+    var item = CHECKLIST_ITEMS[i];
+    var s = j.checklist[item.key];
+    if (!s) { s = { checked: false, by: "", time: "" }; }
+    if (s.checked) done++;
+    var div = document.createElement('div');
+    div.className = 'check-ro' + (s.checked ? ' checked' : '');
+    var metaHtml = s.checked
+      ? '<div class="item-meta">' + esc(s.by) + ' · ' + s.time + '</div>'
+      : '<div class="item-meta" style="color:var(--red)">Not done</div>';
+    div.innerHTML =
+      '<div class="chk-icon">' + (s.checked ? '✓' : '') + '</div>' +
+      '<div class="chk-label"><div class="item-name">' + item.label + '</div>' + metaHtml + '</div>' +
+      '<span class="chk-emoji">' + item.emoji + '</span>';
+    container.appendChild(div);
+  }
+  document.getElementById('d-prog-text').textContent = done + ' of 9 complete';
+  document.getElementById('d-prog-fill').style.width = Math.round(done / 9 * 100) + '%';
+}
+
+function renderDPhotos() {
+  var j = getJ(); if (!j) return;
+  var photos = loadPhotos(j.jobId);
+  var sections = ['before', 'after'];
+  for (var si = 0; si < sections.length; si++) {
+    var sec = sections[si];
+    var grid = document.getElementById('d-' + sec);
+    var empty = document.getElementById('d-' + sec + '-empty');
+    var countEl = document.getElementById('d-count-' + sec);
+    var dlBtn = document.getElementById('dl-' + sec);
+    grid.innerHTML = '';
+    var arr = photos[sec] || [];
+    countEl.textContent = arr.length + ' photo' + (arr.length !== 1 ? 's' : '');
+    dlBtn.disabled = arr.length === 0;
+    if (!arr.length) { empty.style.display = 'block'; continue; }
+    empty.style.display = 'none';
+    for (var pi = 0; pi < arr.length; pi++) {
+      (function(src, index) {
+        var img = document.createElement('img');
+        img.src = src;
+        img.onclick = function() { openLightbox(src, j.jobName, sec, index); };
+        grid.appendChild(img);
+      })(arr[pi], pi);
+    }
+  }
+}
+
+function openLightbox(src, jobName, section, index) {
+  var lb = document.createElement('div');
+  lb.className = 'lightbox';
+  var img = document.createElement('img');
+  img.src = src;
+  var actions = document.createElement('div');
+  actions.className = 'lb-actions';
+  var dlBtn = document.createElement('button');
+  dlBtn.className = 'lb-btn';
+  dlBtn.textContent = '⬇ Download Full Quality';
+  dlBtn.onclick = function(e) {
+    e.stopPropagation();
+    var a = document.createElement('a');
+    a.href = src;
+    a.download = (jobName || 'photo').replace(/\s+/g, '-') + '_' + section + '_' + (index + 1) + '.jpg';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'lb-btn lb-close';
+  closeBtn.textContent = '✕ Close';
+  closeBtn.onclick = function() { lb.remove(); };
+  actions.appendChild(dlBtn);
+  actions.appendChild(closeBtn);
+  lb.appendChild(img);
+  lb.appendChild(actions);
+  lb.addEventListener('click', function(e) { if (e.target === lb) lb.remove(); });
+  document.body.appendChild(lb);
+}
+
+function downloadAll(section) {
+  var j = getJ(); if (!j) return;
+  var photos = loadPhotos(j.jobId);
+  var arr = photos[section] || [];
+  if (!arr.length) { alert('No ' + section + ' photos to download.'); return; }
+  for (var i = 0; i < arr.length; i++) {
+    (function(src, idx) {
+      setTimeout(function() {
+        var a = document.createElement('a');
+        a.href = src;
+        a.download = (j.jobName || 'photo').replace(/\s+/g, '-') + '_' + section + '_' + (idx + 1) + '.jpg';
+        document.body.appendChild(a); a.click(); a.remove();
+      }, idx * 300);
+    })(arr[i], i);
+  }
+}
+
+setInterval(function() {
+  if (document.getElementById('dashboard').style.display !== 'none') {
+    renderDash();
+  }
+}, 5000);
+
+renderDash();
+</script>
+</body>
+</html>
