@@ -100,6 +100,14 @@ h1,h2,h3{font-weight:800}
   padding:12px 24px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;min-height:48px}
 .lightbox .lb-close{background:rgba(255,255,255,.15);color:var(--white)}
 
+.loading-state{text-align:center;padding:60px 20px;color:var(--gray)}
+.loading-state .spinner{display:inline-block;width:32px;height:32px;border:4px solid var(--gray-light);
+  border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error-banner{background:var(--red-light);border:2px solid var(--red);border-radius:var(--radius);
+  padding:16px;margin:20px;color:var(--red);font-weight:600}
+
 .footer{text-align:center;padding:20px;font-size:.75rem;color:var(--gray)}
 .footer a{color:var(--amber-dark);text-decoration:none}
 </style>
@@ -159,10 +167,30 @@ h1,h2,h3{font-weight:800}
 </div>
 
 <footer class="footer">Mattie's Hardwood Flooring · <a href="https://mattieshardwoodflooring.com">mattieshardwoodflooring.com</a></footer>
-<script>
-var STORAGE_KEY = 'mattie_jobs_v3';
-var PHOTO_KEY = 'mattie_photos_v3';
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ══════════════════════════════════════════
+   FIREBASE CONFIG
+   ══════════════════════════════════════════ */
+var firebaseConfig = {
+  apiKey: "AIzaSyAFjHwM8WCXEi1Bt2NeX10bbUyUlI82_6s",
+  authDomain: "mattie-job-tracker.firebaseapp.com",
+  projectId: "mattie-job-tracker",
+  storageBucket: "mattie-job-tracker.firebasestorage.app",
+  messagingSenderId: "127319497623",
+  appId: "1:127319497623:web:4d3cb19a4b7f30d0a782d2"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+/* ══════════════════════════════════════════
+   CONFIG
+   ══════════════════════════════════════════ */
 var CHECKLIST_ITEMS = [
   { key: "trash",       emoji: "🗑️",  label: "Pick up trash" },
   { key: "sweep",       emoji: "🧹", label: "Sweep the floors" },
@@ -175,77 +203,19 @@ var CHECKLIST_ITEMS = [
   { key: "photo",       emoji: "📷", label: "Take a photo" }
 ];
 
-function makeSeedJob() {
-  return {
-    jobId: "job_001", jobName: "The Hendersons",
-    address: "123 Oak Street, Petaluma CA", status: "active",
-    checklist: {
-      trash:{checked:false,by:"",time:""},sweep:{checked:false,by:"",time:""},
-      nailHeads:{checked:false,by:"",time:""},reducers:{checked:false,by:"",time:""},
-      baseboards:{checked:false,by:"",time:""},tools:{checked:false,by:"",time:""},
-      powerCords:{checked:false,by:"",time:""},cleaningKit:{checked:false,by:"",time:""},
-      photo:{checked:false,by:"",time:""}
-    }
-  };
-}
+/* ══════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════ */
+var jobs = [];
+var curId = null;
+var curJob = null;
+var curPhotos = null;
+var unsubscribeJobs = null;
+var unsubscribePhotos = null;
 
-var _storageOK = false;
-var _memStore = {};
-
-(function testStorage() {
-  try {
-    localStorage.setItem('__test__', '1');
-    localStorage.removeItem('__test__');
-    _storageOK = true;
-  } catch(e) {
-    _storageOK = false;
-    console.warn('localStorage unavailable.');
-  }
-})();
-
-function storageGet(key) {
-  if (_storageOK) { try { return localStorage.getItem(key); } catch(e) {} }
-  return _memStore[key] || null;
-}
-
-function storageSet(key, val) {
-  if (_storageOK) { try { localStorage.setItem(key, val); return; } catch(e) {} }
-  _memStore[key] = val;
-}
-
-function loadJobs() {
-  try {
-    var raw = storageGet(STORAGE_KEY);
-    if (raw) {
-      var parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        for (var i = 0; i < parsed.length; i++) {
-          var j = parsed[i];
-          if (!j.jobName && j.clientName) j.jobName = j.clientName;
-          if (!j.jobName && j.teamId) j.jobName = j.teamId;
-          if (!j.jobName) j.jobName = 'Job ' + (i + 1);
-          if (!j.address) j.address = '';
-          if (!j.jobId) j.jobId = 'job_' + Date.now() + '_' + i;
-          if (!j.checklist) j.checklist = makeSeedJob().checklist;
-        }
-        storageSet(STORAGE_KEY, JSON.stringify(parsed));
-        return parsed;
-      }
-    }
-  } catch(e) { console.error('Error loading jobs:', e); }
-  var seeded = [makeSeedJob()];
-  storageSet(STORAGE_KEY, JSON.stringify(seeded));
-  return seeded;
-}
-
-function loadPhotos(jobId) {
-  try {
-    var raw = storageGet(PHOTO_KEY + '_' + jobId);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  return { before: [], after: [] };
-}
-
+/* ══════════════════════════════════════════
+   UTILITY FUNCTIONS
+   ══════════════════════════════════════════ */
 function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 
 function countDone(j) {
@@ -256,17 +226,29 @@ function countDone(j) {
   return n;
 }
 
-var jobs = loadJobs();
-var curId = null;
+function showLoading() {
+  var container = document.getElementById('job-cards');
+  container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading jobs...</p></div>';
+}
 
+function showError(msg) {
+  var container = document.getElementById('job-cards');
+  container.innerHTML = '<div class="error-banner">Error loading jobs: ' + esc(msg) + '</div>';
+  console.error('Firestore error:', msg);
+}
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+   ══════════════════════════════════════════ */
 function renderDash() {
-  jobs = loadJobs();
   var container = document.getElementById('job-cards');
   container.innerHTML = '';
+
   if (!jobs.length) {
     container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No jobs yet.</p></div>';
     return;
   }
+
   for (var i = 0; i < jobs.length; i++) {
     (function(j) {
       var done = countDone(j);
@@ -284,21 +266,54 @@ function renderDash() {
   }
 }
 
+/* ══════════════════════════════════════════
+   DETAIL VIEW
+   ══════════════════════════════════════════ */
 function openDetail(id) {
   curId = id;
-  jobs = loadJobs();
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('detail').classList.add('active');
+
   var tabBtns = document.querySelectorAll('.tabs button');
   for (var i = 0; i < tabBtns.length; i++) tabBtns[i].classList.toggle('active', i === 0);
   var panels = document.querySelectorAll('.dpanel');
   for (var i = 0; i < panels.length; i++) panels[i].classList.toggle('active', i === 0);
-  renderDInfo(); renderDPunch(); renderDPhotos();
+
+  // Subscribe to real-time job data
+  if (unsubscribePhotos) unsubscribePhotos();
+  unsubscribePhotos = db.collection('photos').doc(id).onSnapshot(
+    function(doc) {
+      if (doc.exists) {
+        curPhotos = doc.data();
+      } else {
+        curPhotos = { before: [], after: [] };
+      }
+      renderDPhotos();
+    },
+    function(err) {
+      console.error('Error loading photos:', err);
+    }
+  );
+
+  // Find the current job from the jobs array and render
+  for (var i = 0; i < jobs.length; i++) {
+    if (jobs[i].jobId === id) {
+      curJob = jobs[i];
+      break;
+    }
+  }
+
+  renderDInfo();
+  renderDPunch();
 }
 
 function showDash() {
   document.getElementById('detail').classList.remove('active');
   document.getElementById('dashboard').style.display = 'block';
+  if (unsubscribePhotos) unsubscribePhotos();
+  unsubscribePhotos = null;
+  curJob = null;
+  curPhotos = null;
   renderDash();
 }
 
@@ -311,47 +326,49 @@ function dtab(id, btn) {
   btn.classList.add('active');
 }
 
-function getJ() {
-  for (var i = 0; i < jobs.length; i++) {
-    if (jobs[i].jobId === curId) return jobs[i];
-  }
-  return null;
-}
-
+/* ── Detail: Job Info ── */
 function renderDInfo() {
-  var j = getJ(); if (!j) return;
-  document.getElementById('d-name').textContent = j.jobName;
-  document.getElementById('d-addr').textContent = j.address;
+  if (!curJob) return;
+  document.getElementById('d-name').textContent = curJob.jobName;
+  document.getElementById('d-addr').textContent = curJob.address;
 }
 
+/* ── Detail: Punch List ── */
 function renderDPunch() {
-  var j = getJ(); if (!j) return;
+  if (!curJob) return;
   var container = document.getElementById('d-checks');
   container.innerHTML = '';
   var done = 0;
+
   for (var i = 0; i < CHECKLIST_ITEMS.length; i++) {
     var item = CHECKLIST_ITEMS[i];
-    var s = j.checklist[item.key];
+    var s = curJob.checklist[item.key];
     if (!s) { s = { checked: false, by: "", time: "" }; }
     if (s.checked) done++;
+
     var div = document.createElement('div');
     div.className = 'check-ro' + (s.checked ? ' checked' : '');
+
     var metaHtml = s.checked
       ? '<div class="item-meta">' + esc(s.by) + ' · ' + s.time + '</div>'
       : '<div class="item-meta" style="color:var(--red)">Not done</div>';
+
     div.innerHTML =
       '<div class="chk-icon">' + (s.checked ? '✓' : '') + '</div>' +
       '<div class="chk-label"><div class="item-name">' + item.label + '</div>' + metaHtml + '</div>' +
       '<span class="chk-emoji">' + item.emoji + '</span>';
+
     container.appendChild(div);
   }
+
   document.getElementById('d-prog-text').textContent = done + ' of 9 complete';
   document.getElementById('d-prog-fill').style.width = Math.round(done / 9 * 100) + '%';
 }
 
+/* ── Detail: Photos ── */
 function renderDPhotos() {
-  var j = getJ(); if (!j) return;
-  var photos = loadPhotos(j.jobId);
+  if (!curPhotos) curPhotos = { before: [], after: [] };
+
   var sections = ['before', 'after'];
   for (var si = 0; si < sections.length; si++) {
     var sec = sections[si];
@@ -360,16 +377,22 @@ function renderDPhotos() {
     var countEl = document.getElementById('d-count-' + sec);
     var dlBtn = document.getElementById('dl-' + sec);
     grid.innerHTML = '';
-    var arr = photos[sec] || [];
+
+    var arr = curPhotos[sec] || [];
     countEl.textContent = arr.length + ' photo' + (arr.length !== 1 ? 's' : '');
     dlBtn.disabled = arr.length === 0;
-    if (!arr.length) { empty.style.display = 'block'; continue; }
+
+    if (!arr.length) {
+      empty.style.display = 'block';
+      continue;
+    }
     empty.style.display = 'none';
+
     for (var pi = 0; pi < arr.length; pi++) {
       (function(src, index) {
         var img = document.createElement('img');
         img.src = src;
-        img.onclick = function() { openLightbox(src, j.jobName, sec, index); };
+        img.onclick = function() { openLightbox(src, curJob.jobName, sec, index); };
         grid.appendChild(img);
       })(arr[pi], pi);
     }
@@ -379,10 +402,13 @@ function renderDPhotos() {
 function openLightbox(src, jobName, section, index) {
   var lb = document.createElement('div');
   lb.className = 'lightbox';
+
   var img = document.createElement('img');
   img.src = src;
+
   var actions = document.createElement('div');
   actions.className = 'lb-actions';
+
   var dlBtn = document.createElement('button');
   dlBtn.className = 'lb-btn';
   dlBtn.textContent = '⬇ Download Full Quality';
@@ -391,44 +417,91 @@ function openLightbox(src, jobName, section, index) {
     var a = document.createElement('a');
     a.href = src;
     a.download = (jobName || 'photo').replace(/\s+/g, '-') + '_' + section + '_' + (index + 1) + '.jpg';
-    document.body.appendChild(a); a.click(); a.remove();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
+
   var closeBtn = document.createElement('button');
   closeBtn.className = 'lb-btn lb-close';
   closeBtn.textContent = '✕ Close';
   closeBtn.onclick = function() { lb.remove(); };
+
   actions.appendChild(dlBtn);
   actions.appendChild(closeBtn);
   lb.appendChild(img);
   lb.appendChild(actions);
-  lb.addEventListener('click', function(e) { if (e.target === lb) lb.remove(); });
+
+  lb.addEventListener('click', function(e) { if (e.target === lb) lb.remov%(); });
   document.body.appendChild(lb);
 }
 
 function downloadAll(section) {
-  var j = getJ(); if (!j) return;
-  var photos = loadPhotos(j.jobId);
-  var arr = photos[section] || [];
+  if (!curJob || !curPhotos) return;
+  var arr = curPhotos[section] || [];
   if (!arr.length) { alert('No ' + section + ' photos to download.'); return; }
+
   for (var i = 0; i < arr.length; i++) {
     (function(src, idx) {
       setTimeout(function() {
         var a = document.createElement('a');
         a.href = src;
-        a.download = (j.jobName || 'photo').replace(/\s+/g, '-') + '_' + section + '_' + (idx + 1) + '.jpg';
-        document.body.appendChild(a); a.click(); a.remove();
+        a.download = (curJob.jobName || 'photo').replace(/\s+/g, '-') + '_' + section + '_' + (idx + 1) + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }, idx * 300);
     })(arr[i], i);
   }
 }
 
-setInterval(function() {
-  if (document.getElementById('dashboard').style.display !== 'none') {
-    renderDash();
-  }
-}, 5000);
+/* ══════════════════════════════════════════
+   FIRESTORE INITIALIZATION & REALTIME LISTENERS
+   ══════════════════════════════════════════ */
+function initFirestore() {
+  showLoading();
 
-renderDash();
+  // Set up real-time listener for jobs collection
+  unsubscribeJobs = db.collection('jobs').onSnapshot(
+    function(snapshot) {
+      jobs = [];
+      snapshot.forEach(function(doc) {
+        var data = doc.data();
+        data.jobId = doc.id;
+        // Ensure checklist exists
+        if (!data.checklist) {
+          data.checklist = {};
+          CHECKLIST_ITEMS.forEach(function(item) {
+            data.checklist[item.key] = { checked: false, by: "", time: "" };
+          });
+        }
+        jobs.push(data);
+      });
+
+      // If we're viewing a detail, update curJob
+      if (curId) {
+        for (var i = 0; i < jobs.length; i++) {
+          if (jobs[i].jobId === curId) {
+            curJob = jobs[i];
+            renderDPunch();
+            break;
+          }
+        }
+      } else {
+        // Render dashboard
+        renderDash();
+      }
+    },
+    function(err) {
+      showError(err.message);
+    }
+  );
+}
+
+/* ══════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════ */
+initFirestore();
 </script>
 </body>
 </html>
