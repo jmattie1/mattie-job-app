@@ -432,7 +432,7 @@ function openLightbox(src, jobName, section, index) {
   lb.appendChild(img);
   lb.appendChild(actions);
 
-  lb.addEventListener('click', function(e) { if (e.target === lb) lb.remov%(); });
+  lb.addEventListener('click', function(e) { if (e.target === lb) lb.remove(); });
   document.body.appendChild(lb);
 }
 
