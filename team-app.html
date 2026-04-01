@@ -17,12 +17,10 @@
 body{font-family:'Nunito',sans-serif;color:var(--charcoal);background:var(--white);
   padding-bottom:80px;-webkit-tap-highlight-color:transparent;min-height:100dvh}
 h1,h2,h3{font-weight:800}
-
 .header{background:var(--amber);color:var(--white);padding:16px 20px;
   display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
 .header h1{font-size:1.15rem}
 .header .logo{font-size:1.6rem}
-
 .nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);
   border-top:2px solid var(--gray-mid);display:flex;z-index:100;
   padding-bottom:env(safe-area-inset-bottom)}
@@ -31,18 +29,15 @@ h1,h2,h3{font-weight:800}
   font-family:inherit;font-size:.72rem;font-weight:700;color:var(--gray);cursor:pointer}
 .nav button.active{color:var(--amber)}
 .nav button .ico{font-size:1.45rem;line-height:1}
-
 .panel{display:none;padding:16px;animation:fadeIn .2s}
 .panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
 select,input{font-family:inherit;font-size:1rem;border:2px solid var(--gray-mid);
   border-radius:10px;padding:12px 14px;width:100%;background:var(--white);color:var(--charcoal)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='2' fill='none'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;-webkit-appearance:none}
 select:focus,input:focus{outline:none;border-color:var(--amber)}
 label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var(--gray)}
-
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
   border:none;border-radius:10px;padding:14px 20px;font-family:inherit;
   font-size:.95rem;font-weight:700;cursor:pointer;min-height:48px;transition:transform .1s}
@@ -50,20 +45,17 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
 .btn-primary{background:var(--amber);color:var(--white)}
 .btn-secondary{background:var(--gray-light);color:var(--charcoal)}
 .btn-small{padding:10px 14px;font-size:.8rem;min-height:36px}
-
 .card{background:var(--white);border:2px solid var(--gray-mid);border-radius:var(--radius);
   padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
 .info-row{padding:12px 0;border-bottom:1px solid var(--gray-mid)}
 .info-row:last-child{border-bottom:none}
 .info-label{font-size:.75rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
 .info-value{font-size:1.1rem;margin-top:2px;font-weight:600}
-
 .progress-wrap{margin-bottom:16px}
 .progress-text{font-size:.9rem;font-weight:700;margin-bottom:6px;color:var(--charcoal)}
 .progress-bar{height:14px;background:var(--gray-light);border-radius:7px;overflow:hidden}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--green));
   border-radius:7px;transition:width .4s ease}
-
 .check-item{display:flex;align-items:center;gap:12px;padding:14px;
   border:2px solid var(--gray-mid);border-radius:var(--radius);margin-bottom:10px;
   cursor:pointer;transition:border-color .2s,background .2s;min-height:56px;user-select:none}
@@ -77,7 +69,6 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
 .check-emoji{font-size:1.3rem;flex-shrink:0;margin-left:auto}
 @keyframes bounce{0%{transform:scale(1)}30%{transform:scale(1.25)}50%{transform:scale(.9)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
 .check-item.just-checked .check-icon{animation:bounce .4s ease}
-
 .section-title{font-size:1.05rem;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:10px}
 .photo-thumb{position:relative}
@@ -89,11 +80,9 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
 .photo-input-wrap input[type="file"]{display:none}
 .photo-input-wrap .btn{width:100%}
 .photo-count{font-size:.8rem;color:var(--gray);font-weight:600;margin-left:auto}
-
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;
   display:flex;align-items:center;justify-content:center;cursor:pointer}
 .lightbox img{max-width:95%;max-height:90vh;border-radius:8px}
-
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
   display:flex;align-items:flex-end;justify-content:center}
 .modal{background:var(--white);border-radius:20px 20px 0 0;padding:24px 20px 32px;
@@ -102,27 +91,21 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
 .modal .form-group{margin-bottom:14px}
 .modal .btn-row{display:flex;gap:10px;margin-top:18px}
 .modal .btn-row .btn{flex:1}
-
 .footer{text-align:center;padding:20px;font-size:.75rem;color:var(--gray)}
 .footer a{color:var(--amber-dark);text-decoration:none}
-
 .loading-spinner{display:inline-block;width:20px;height:20px;border:3px solid var(--gray-mid);
   border-top-color:var(--amber);border-radius:50%;animation:spin .6s linear infinite;margin-left:8px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .reset-wrap{text-align:center;padding:10px;margin-top:20px}
 .reset-btn{background:none;border:1px solid var(--gray-mid);border-radius:8px;padding:8px 14px;
   font-family:inherit;font-size:.75rem;color:var(--gray);cursor:pointer}
 </style>
 </head>
 <body>
-
 <div class="header">
   <span class="logo">🪵</span>
   <h1>Mattie's Hardwood — Team</h1>
 </div>
-
-<!-- TAB 1: Job Info -->
 <div id="tab-job" class="panel active">
   <div style="margin-bottom:14px">
     <label for="job-select">Select Job</label>
@@ -138,8 +121,6 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
   </div>
   <button class="btn btn-secondary btn-small" style="width:100%;color:var(--red)" onclick="deleteCurrentJob()">🗑️ Delete This Job</button>
 </div>
-
-<!-- TAB 2: Punch List -->
 <div id="tab-punch" class="panel">
   <div class="progress-wrap">
     <div class="progress-text" id="progress-text">0 of 9 complete</div>
@@ -147,8 +128,6 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
   </div>
   <div id="checklist"></div>
 </div>
-
-<!-- TAB 3: Photos -->
 <div id="tab-photos" class="panel">
   <div class="card">
     <div style="display:flex;align-items:center">
@@ -173,21 +152,16 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
     </div>
   </div>
 </div>
-
 <nav class="nav">
   <button class="active" onclick="switchTab('job',this)"><span class="ico">📋</span>Job Info</button>
   <button onclick="switchTab('punch',this)"><span class="ico">✅</span>Punch List</button>
   <button onclick="switchTab('photos',this)"><span class="ico">📷</span>Photos</button>
 </nav>
-
 <footer class="footer">
   Mattie's Hardwood Flooring · <a href="https://mattieshardwoodflooring.com">mattieshardwoodflooring.com</a>
   <div class="reset-wrap"><button class="reset-btn" onclick="resetApp()">Reset App Data</button></div>
 </footer>
 <script>
-/* ════════════════════════════════════════════
-   CONFIG
-   ════════════════════════════════════════════ */
 var STORAGE_KEY = 'mattie_jobs_v3';
 var CREW_KEY = 'crew_name';
 var PHOTO_KEY = 'mattie_photos_v3';
@@ -206,55 +180,38 @@ var CHECKLIST_ITEMS = [
 
 function makeSeedJob() {
   return {
-    jobId: "job_001",
-    jobName: "The Hendersons",
-    address: "123 Oak Street, Petaluma CA",
-    status: "active",
+    jobId: "job_001", jobName: "The Hendersons",
+    address: "123 Oak Street, Petaluma CA", status: "active",
     checklist: {
-      trash:       { checked: false, by: "", time: "" },
-      sweep:       { checked: false, by: "", time: "" },
-      nailHeads:   { checked: false, by: "", time: "" },
-      reducers:    { checked: false, by: "", time: "" },
-      baseboards:  { checked: false, by: "", time: "" },
-      tools:       { checked: false, by: "", time: "" },
-      powerCords:  { checked: false, by: "", time: "" },
-      cleaningKit: { checked: false, by: "", time: "" },
-      photo:       { checked: false, by: "", time: "" }
+      trash:{checked:false,by:"",time:""},sweep:{checked:false,by:"",time:""},
+      nailHeads:{checked:false,by:"",time:""},reducers:{checked:false,by:"",time:""},
+      baseboards:{checked:false,by:"",time:""},tools:{checked:false,by:"",time:""},
+      powerCords:{checked:false,by:"",time:""},cleaningKit:{checked:false,by:"",time:""},
+      photo:{checked:false,by:"",time:""}
     }
   };
 }
 
 var _storageOK = false;
 var _memStore = {};
-
 try {
   if (typeof localStorage !== 'undefined' && localStorage !== null) {
     localStorage.setItem('__test__', '1');
     localStorage.removeItem('__test__');
     _storageOK = true;
   }
-} catch(e) {
-  _storageOK = false;
-}
+} catch(e) { _storageOK = false; }
 
 function storageGet(key) {
-  if (_storageOK) {
-    try { return localStorage.getItem(key); } catch(e) {}
-  }
+  if (_storageOK) { try { return localStorage.getItem(key); } catch(e) {} }
   return _memStore[key] || null;
 }
-
 function storageSet(key, val) {
-  if (_storageOK) {
-    try { localStorage.setItem(key, val); return; } catch(e) {}
-  }
+  if (_storageOK) { try { localStorage.setItem(key, val); return; } catch(e) {} }
   _memStore[key] = val;
 }
-
 function storageRemove(key) {
-  if (_storageOK) {
-    try { localStorage.removeItem(key); return; } catch(e) {}
-  }
+  if (_storageOK) { try { localStorage.removeItem(key); return; } catch(e) {} }
   delete _memStore[key];
 }
 
@@ -277,17 +234,13 @@ function loadJobs() {
         return parsed;
       }
     }
-  } catch(e) {
-    console.error('Error loading jobs:', e);
-  }
+  } catch(e) { console.error('Error loading jobs:', e); }
   var seeded = [makeSeedJob()];
   storageSet(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
 }
 
-function saveJobs() {
-  storageSet(STORAGE_KEY, JSON.stringify(jobs));
-}
+function saveJobs() { storageSet(STORAGE_KEY, JSON.stringify(jobs)); }
 
 function loadPhotos(jobId) {
   try {
@@ -298,11 +251,8 @@ function loadPhotos(jobId) {
 }
 
 function savePhotos(jobId, photos) {
-  try {
-    storageSet(PHOTO_KEY + '_' + jobId, JSON.stringify(photos));
-  } catch(e) {
-    alert('Storage full! Try deleting some old photos.');
-  }
+  try { storageSet(PHOTO_KEY + '_' + jobId, JSON.stringify(photos)); }
+  catch(e) { alert('Storage full! Try deleting some old photos.'); }
 }
 
 function esc(s) {
@@ -321,8 +271,7 @@ function cur() {
 
 function resetApp() {
   if (!confirm('This will clear all job data and start fresh. Are you sure?')) return;
-  storageRemove(STORAGE_KEY);
-  storageRemove(CREW_KEY);
+  storageRemove(STORAGE_KEY); storageRemove(CREW_KEY);
   if (_storageOK) {
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
@@ -332,9 +281,7 @@ function resetApp() {
     } catch(e) {}
   }
   _memStore = {};
-  jobs = loadJobs();
-  currentId = jobs[0].jobId;
-  initApp();
+  jobs = loadJobs(); currentId = jobs[0].jobId; initApp();
 }
 
 function switchTab(name, btn) {
@@ -357,10 +304,7 @@ function renderJobSelect() {
     sel.appendChild(o);
   }
   sel.value = currentId;
-  sel.onchange = function() {
-    currentId = sel.value;
-    renderAll();
-  };
+  sel.onchange = function() { currentId = sel.value; renderAll(); };
 }
 
 function renderInfo() {
@@ -377,10 +321,7 @@ function renderChecklist() {
   for (var i = 0; i < CHECKLIST_ITEMS.length; i++) {
     var item = CHECKLIST_ITEMS[i];
     var s = j.checklist[item.key];
-    if (!s) {
-      j.checklist[item.key] = { checked: false, by: "", time: "" };
-      s = j.checklist[item.key];
-    }
+    if (!s) { j.checklist[item.key] = {checked:false,by:"",time:""}; s = j.checklist[item.key]; }
     if (s.checked) done++;
     var div = document.createElement('div');
     div.className = 'check-item' + (s.checked ? ' checked' : '');
@@ -416,7 +357,6 @@ function toggleCheck(key) {
   }
   saveJobs(); renderChecklist();
 }
-
 function renderPhotos() {
   var j = cur();
   var photos = loadPhotos(j.jobId);
@@ -455,6 +395,29 @@ function renderPhotos() {
   }
 }
 
+function compressImage(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 1200;
+      var w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.6);
+      callback(compressed);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function handlePhotos(event, sec) {
   var j = cur();
   var files = event.target.files;
@@ -468,9 +431,8 @@ function handlePhotos(event, sec) {
   var total = files.length;
   for (var i = 0; i < total; i++) {
     (function(file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        photos[sec].push(e.target.result);
+      compressImage(file, function(compressed) {
+        photos[sec].push(compressed);
         loaded++;
         if (loaded === total) {
           savePhotos(j.jobId, photos);
@@ -478,8 +440,7 @@ function handlePhotos(event, sec) {
           btn.disabled = false;
           renderPhotos();
         }
-      };
-      reader.readAsDataURL(file);
+      });
     })(files[i]);
   }
   event.target.value = '';
@@ -507,14 +468,12 @@ function openEditModal() {
     '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
-
 function saveEdit() {
   var j = cur();
   j.jobName = document.getElementById('edit-name').value;
   j.address = document.getElementById('edit-addr').value;
   saveJobs(); closeModal(); renderJobSelect(); renderInfo();
 }
-
 function closeModal() {
   var overlays = document.querySelectorAll('.modal-overlay');
   for (var i = 0; i < overlays.length; i++) overlays[i].remove();
@@ -532,14 +491,12 @@ function openNewJobModal() {
   document.body.insertAdjacentHTML('beforeend', html);
   document.getElementById('new-name').focus();
 }
-
 function saveNewJob() {
   var name = document.getElementById('new-name').value.trim();
   var addr = document.getElementById('new-addr').value.trim();
   if (!name) { alert('Please enter a job name.'); return; }
   var newJob = {
-    jobId: 'job_' + Date.now(),
-    jobName: name, address: addr, status: 'active',
+    jobId: 'job_' + Date.now(), jobName: name, address: addr, status: 'active',
     checklist: {
       trash:{checked:false,by:"",time:""},sweep:{checked:false,by:"",time:""},
       nailHeads:{checked:false,by:"",time:""},reducers:{checked:false,by:"",time:""},
@@ -565,7 +522,6 @@ function deleteCurrentJob() {
 }
 
 function renderAll() { renderInfo(); renderChecklist(); renderPhotos(); }
-
 function initApp() { renderJobSelect(); renderAll(); }
 
 function safeInit() {
@@ -575,7 +531,6 @@ function safeInit() {
     console.error('initApp failed:', e);
   }
 }
-
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', safeInit);
 } else { safeInit(); }
