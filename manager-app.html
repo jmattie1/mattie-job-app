@@ -112,6 +112,35 @@ h1,h2,h3{font-weight:800}
 
 .footer{text-align:center;padding:20px;font-size:.75rem;color:var(--gray)}
 .footer a{color:var(--amber-dark);text-decoration:none}
+
+/* Archive button on job cards */
+.job-card{position:relative}
+.job-card .card-top{display:flex;align-items:flex-start;justify-content:space-between}
+.job-card .card-top .card-info{flex:1;min-width:0}
+.archive-btn{border:none;background:var(--gray-light);color:var(--gray);border-radius:8px;
+  padding:6px 12px;font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;flex-shrink:0;margin-left:12px;transition:all .15s;min-height:36px}
+.archive-btn:hover{background:var(--amber-light);color:var(--amber-dark)}
+.archive-btn:active{transform:scale(.95)}
+
+/* Archived section */
+.archived-section{margin-top:24px;padding-top:18px;border-top:2px dashed var(--gray-mid)}
+.archived-toggle{display:flex;align-items:center;gap:8px;border:none;background:none;
+  font-family:inherit;font-size:.95rem;font-weight:700;color:var(--gray);cursor:pointer;
+  padding:8px 0;width:100%;min-height:44px}
+.archived-toggle .arrow{transition:transform .2s;font-size:.8rem}
+.archived-toggle .arrow.open{transform:rotate(90deg)}
+.archived-toggle .badge{background:var(--gray-mid);color:var(--gray);border-radius:12px;
+  padding:2px 10px;font-size:.75rem;font-weight:700;margin-left:4px}
+.archived-list{overflow:hidden;transition:max-height .3s ease}
+.archived-list.collapsed{max-height:0}
+.archived-list .job-card{opacity:.7;border-left-color:var(--gray-mid)!important}
+.archived-list .job-card:hover{opacity:1}
+.unarchive-btn{border:none;background:var(--green-light);color:var(--green);border-radius:8px;
+  padding:6px 12px;font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;flex-shrink:0;margin-left:12px;transition:all .15s;min-height:36px}
+.unarchive-btn:hover{background:var(--green);color:var(--white)}
+.unarchive-btn:active{transform:scale(.95)}
 </style>
 </head>
 <body>
@@ -124,6 +153,14 @@ h1,h2,h3{font-weight:800}
 <div id="dashboard" class="dashboard">
   <div class="dash-title">Active Jobs</div>
   <div id="job-cards"></div>
+  <div id="archived-section" class="archived-section" style="display:none">
+    <button class="archived-toggle" onclick="toggleArchived()">
+      <span class="arrow" id="arch-arrow">▶</span>
+      <span>Archived Jobs</span>
+      <span class="badge" id="arch-count">0</span>
+    </button>
+    <div id="archived-cards" class="archived-list collapsed"></div>
+  </div>
 </div>
 
 <div id="detail" class="detail">
@@ -244,27 +281,72 @@ function showError(msg) {
    ══════════════════════════════════════════ */
 function renderDash() {
   var container = document.getElementById('job-cards');
+  var archivedContainer = document.getElementById('archived-cards');
+  var archivedSection = document.getElementById('archived-section');
   container.innerHTML = '';
+  archivedContainer.innerHTML = '';
 
-  if (!jobs.length) {
+  var activeJobs = [];
+  var archivedJobs = [];
+  for (var i = 0; i < jobs.length; i++) {
+    if (jobs[i].archived) {
+      archivedJobs.push(jobs[i]);
+    } else {
+      activeJobs.push(jobs[i]);
+    }
+  }
+
+  if (!activeJobs.length && !archivedJobs.length) {
     container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No jobs yet.</p></div>';
+    archivedSection.style.display = 'none';
     return;
   }
 
-  for (var i = 0; i < jobs.length; i++) {
+  if (!activeJobs.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No active jobs.</p></div>';
+  }
+
+  for (var i = 0; i < activeJobs.length; i++) {
     (function(j) {
       var done = countDone(j);
       var cls = done === 9 ? 's-done' : done === 0 ? 's-none' : 's-wip';
       var card = document.createElement('div');
       card.className = 'job-card ' + cls;
       card.innerHTML =
-        '<div><div class="name">' + esc(j.jobName) + '</div>' +
+        '<div class="card-top"><div class="card-info" onclick="openDetail(\'' + j.jobId + '\')">' +
+        '<div class="name">' + esc(j.jobName) + '</div>' +
         '<div class="addr">' + esc(j.address) + '</div></div>' +
-        '<div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:' + Math.round(done/9*100) + '%"></div></div>' +
+        '<button class="archive-btn" onclick="event.stopPropagation();archiveJob(\'' + j.jobId + '\')">📦 Archive</button></div>' +
+        '<div class="bar-wrap" onclick="openDetail(\'' + j.jobId + '\')">' +
+        '<div class="bar"><div class="bar-fill" style="width:' + Math.round(done/9*100) + '%"></div></div>' +
         '<div class="bar-label">' + done + ' of 9 complete</div></div>';
-      card.onclick = function() { openDetail(j.jobId); };
       container.appendChild(card);
-    })(jobs[i]);
+    })(activeJobs[i]);
+  }
+
+  // Archived jobs section
+  if (archivedJobs.length) {
+    archivedSection.style.display = 'block';
+    document.getElementById('arch-count').textContent = archivedJobs.length;
+
+    for (var i = 0; i < archivedJobs.length; i++) {
+      (function(j) {
+        var done = countDone(j);
+        var card = document.createElement('div');
+        card.className = 'job-card';
+        card.innerHTML =
+          '<div class="card-top"><div class="card-info" onclick="openDetail(\'' + j.jobId + '\')">' +
+          '<div class="name">' + esc(j.jobName) + '</div>' +
+          '<div class="addr">' + esc(j.address) + '</div></div>' +
+          '<button class="unarchive-btn" onclick="event.stopPropagation();unarchiveJob(\'' + j.jobId + '\')">↩ Restore</button></div>' +
+          '<div class="bar-wrap" onclick="openDetail(\'' + j.jobId + '\')">' +
+          '<div class="bar"><div class="bar-fill" style="width:' + Math.round(done/9*100) + '%"></div></div>' +
+          '<div class="bar-label">' + done + ' of 9 complete</div></div>';
+        archivedContainer.appendChild(card);
+      })(archivedJobs[i]);
+    }
+  } else {
+    archivedSection.style.display = 'none';
   }
 }
 
@@ -454,6 +536,37 @@ function downloadAll(section) {
         a.remove();
       }, idx * 300);
     })(arr[i], i);
+  }
+}
+
+/* ══════════════════════════════════════════
+   ARCHIVE FUNCTIONS
+   ══════════════════════════════════════════ */
+function archiveJob(jobId) {
+  db.collection('jobs').doc(jobId).update({ archived: true })
+    .then(function() { console.log('Job archived:', jobId); })
+    .catch(function(err) { alert('Error archiving job: ' + err.message); });
+}
+
+function unarchiveJob(jobId) {
+  db.collection('jobs').doc(jobId).update({ archived: false })
+    .then(function() { console.log('Job restored:', jobId); })
+    .catch(function(err) { alert('Error restoring job: ' + err.message); });
+}
+
+var archivedOpen = false;
+function toggleArchived() {
+  archivedOpen = !archivedOpen;
+  var list = document.getElementById('archived-cards');
+  var arrow = document.getElementById('arch-arrow');
+  if (archivedOpen) {
+    list.classList.remove('collapsed');
+    list.style.maxHeight = list.scrollHeight + 'px';
+    arrow.classList.add('open');
+  } else {
+    list.style.maxHeight = '0';
+    list.classList.add('collapsed');
+    arrow.classList.remove('open');
   }
 }
 
