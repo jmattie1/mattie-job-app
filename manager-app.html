@@ -141,6 +141,13 @@ h1,h2,h3{font-weight:800}
   white-space:nowrap;flex-shrink:0;margin-left:12px;transition:all .15s;min-height:36px}
 .unarchive-btn:hover{background:var(--green);color:var(--white)}
 .unarchive-btn:active{transform:scale(.95)}
+
+.note-card{border:2px solid var(--gray-mid);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:var(--white);box-shadow:var(--shadow)}
+.note-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.note-author{font-weight:700;font-size:.9rem;color:var(--charcoal)}
+.note-time{font-size:.72rem;color:var(--gray);font-weight:600}
+.note-body{font-size:.95rem;line-height:1.5;color:var(--charcoal);white-space:pre-wrap;word-wrap:break-word}
+.note-empty{text-align:center;padding:30px 16px;color:var(--gray);font-size:.9rem}
 </style>
 </head>
 <body>
@@ -169,6 +176,7 @@ h1,h2,h3{font-weight:800}
     <button class="active" onclick="dtab('d-info',this)">Job Info</button>
     <button onclick="dtab('d-punch',this)">Punch List</button>
     <button onclick="dtab('d-photos',this)">Photos</button>
+      <button onclick="dtab('d-notes',this)">Notes</button>
   </div>
   <div id="d-info" class="dpanel active">
     <div class="card">
@@ -589,6 +597,33 @@ function toggleArchived() {
 /* ══════════════════════════════════════════
    FIRESTORE INITIALIZATION & REALTIME LISTENERS
    ══════════════════════════════════════════ */
+var unsubscribeNotes = null;
+var curNotes = [];
+
+function renderDNotes() {
+  var listEl = document.getElementById('d-notes-list');
+  var countEl = document.getElementById('d-notes-count');
+  if (!listEl) return;
+  countEl.textContent = curNotes.length + ' note' + (curNotes.length !== 1 ? 's' : '');
+  if (curNotes.length === 0) {
+    listEl.innerHTML = '<div class="note-empty">No notes yet.</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  for (var i = curNotes.length - 1; i >= 0; i--) {
+    (function(note) {
+      var div = document.createElement('div');
+      div.className = 'note-card';
+      div.innerHTML =
+        '<div class="note-header">' +
+          '<div><span class="note-author">' + esc(note.by) + '</span> \u00B7 <span class="note-time">' + esc(note.time) + '</span></div>' +
+        '</div>' +
+        '<div class="note-body">' + esc(note.text) + '</div>';
+      listEl.appendChild(div);
+    })(curNotes[i]);
+  }
+}
+
 function initFirestore() {
   showLoading();
 
