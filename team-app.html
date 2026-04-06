@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Mattie's Hardwood — Team App</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%23D97706"/><g transform="translate(16,16) rotate(-15) translate(-16,-16)"><rect x="2" y="4" width="13" height="5" rx="1" fill="%23E8B86D" opacity=".9"/><rect x="16" y="4" width="15" height="5" rx="1" fill="%23DCA65E" opacity=".9"/><rect x="-1" y="10" width="17" height="5" rx="1" fill="%23F0C478" opacity=".9"/><rect x="17" y="10" width="17" height="5" rx="1" fill="%23E8B86D" opacity=".9"/><rect x="2" y="16" width="12" height="5" rx="1" fill="%23DCA65E" opacity=".9"/><rect x="15" y="16" width="16" height="5" rx="1" fill="%23F0C478" opacity=".9"/><rect x="-1" y="22" width="16" height="5" rx="1" fill="%23E8B86D" opacity=".9"/><rect x="16" y="22" width="17" height="5" rx="1" fill="%23DCA65E" opacity=".9"/></g><text x="25" y="30" font-family="Arial" font-weight="900" font-size="11" fill="rgba(255,255,255,.85)" text-anchor="middle">M</text></svg>">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0Q5NzcwNiIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2LDE2KSByb3RhdGUoLTE1KSB0cmFuc2xhdGUoLTE2LC0xNikiPjxyZWN0IHg9IjIiIHk9IjQiIHdpZHRoPSIxMyIgaGVpZ2h0PSI1IiByeD0iMSIgZmlsbD0iI0U4Qjg2RCIgb3BhY2l0eT0iLjkiLz48cmVjdCB4PSIxNiIgeT0iNCIgd2lkdGg9IjE1IiBoZWlnaHQ9IjUiIHJ4PSIxIiBmaWxsPSIjRENBNjVFIiBvcGFjaXR5PSIuOSIvPjxyZWN0IHg9Ii0xIiB5PSIxMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjUiIHJ4PSIxIiBmaWxsPSIjRjBDNDc4IiBvcGFjaXR5PSIuOSIvPjxyZWN0IHg9IjE3IiB5PSIxMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjUiIHJ4PSIxIiBmaWxsPSIjRThCODZEIiBvcGFjaXR5PSIuOSIvPjxyZWN0IHg9IjIiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IiNEQ0E2NUUiIG9wYWNpdHk9Ii45Ii8+PHJlY3QgeD0iMTUiIHk9IjE2IiB3aWR0aD0iMTYiIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IiNGMEM0NzgiIG9wYWNpdHk9Ii45Ii8+PHJlY3QgeD0iLTEiIHk9IjIyIiB3aWR0aD0iMTYiIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IiNFOEI4NkQiIG9wYWNpdHk9Ii45Ii8+PHJlY3QgeD0iMTYiIHk9IjIyIiB3aWR0aD0iMTciIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IiNEQ0E2NUUiIG9wYWNpdHk9Ii45Ii8+PC9nPjx0ZXh0IHg9IjI1IiB5PSIzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjExIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LC44NSkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk08L3RleHQ+PC9zdmc+">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -200,6 +200,7 @@ label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
 <script>
 /* ══════════════════════════════════════════
@@ -216,6 +217,7 @@ var firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
+var storage = firebase.storage();
 
 /* ══════════════════════════════════════════
    CONFIG
@@ -223,7 +225,7 @@ var db = firebase.firestore();
 var CREW_KEY = 'crew_name';
 
 var CHECKLIST_ITEMS = [
-  { key: "trash",       emoji: "🗑️",  label: "Pick up trash" },
+  { key: "trash",       emoji: "👑️",  label: "Pick up trash" },
   { key: "sweep",       emoji: "🧹", label: "Sweep the floors" },
   { key: "nailHeads",   emoji: "🔨", label: "Fill nail heads" },
   { key: "reducers",    emoji: "🚪", label: "Install reducers" },
@@ -523,260 +525,347 @@ async function toggleCheck(key) {
   } else {
     var crewName = storageGet(CREW_KEY) || '';
     if (!crewName) {
-      crewName = prompt('Crew name (first time only)?', '');
+      crewName = prompt('Enter your name (saved for future use):');
       if (!crewName) return;
       storageSet(CREW_KEY, crewName);
     }
-
-    var now = new Date();
     s.checked = true;
     s.by = crewName;
-    s.time = ('0' + (now.getHours())).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    s.time = new Date().toLocaleString();
   }
 
   await saveJob(j);
   renderChecklist();
-
-  // Bounce animation
-  var elem = document.querySelector('[data-key="' + key + '"] .check-icon');
-  if (elem && s.checked) {
-    elem.parentElement.classList.add('just-checked');
-    setTimeout(function() {
-      elem.parentElement.classList.remove('just-checked');
-    }, 400);
-  }
 }
 
 /* ══════════════════════════════════════════
    RENDER: PHOTOS
    ══════════════════════════════════════════ */
-var currentPhotos = { before: [], after: [] };
-
 async function renderPhotos() {
+  var j = cur();
+  if (!j) {
+    document.getElementById('photos-before').innerHTML = '';
+    document.getElementById('photos-after').innerHTML = '';
+    document.getElementById('count-before').textContent = '0 photos';
+    document.getElementById('count-after').textContent = '0 photos';
+    return;
+  }
+
+  var photos = await loadPhotos(j.jobId);
+
+  var sections = ['before', 'after'];
+  for (var si = 0; si < sections.length; si++) {
+    var sec = sections[si];
+    var grid = document.getElementById('photos-' + sec);
+    var countEl = document.getElementById('count-' + sec);
+    grid.innerHTML = '';
+
+    var arr = photos[sec] || [];
+    countEl.textContent = arr.length + ' photo' + (arr.length !== 1 ? 's' : '');
+
+    for (var pi = 0; pi < arr.length; pi++) {
+      (function(src, index, section) {
+        var wrap = document.createElement('div');
+        wrap.className = 'photo-thumb';
+
+        var img = document.createElement('img');
+        img.src = src;
+        img.onclick = function() { openLightbox(src); };
+
+        var del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '✕';
+        del.onclick = function(e) {
+          e.stopPropagation();
+          if (confirm('Delete this photo?')) {
+            deletePhoto(index, section);
+          }
+        };
+
+        wrap.appendChild(img);
+        wrap.appendChild(del);
+        grid.appendChild(wrap);
+      })(arr[pi], pi, sec);
+    }
+  }
+}
+
+async function deletePhoto(index, section) {
   var j = cur();
   if (!j) return;
 
-  currentPhotos = await loadPhotos(j.jobId);
-  renderPhotoGrid('before');
-  renderPhotoGrid('after');
+  try {
+    var photos = await loadPhotos(j.jobId);
+    var url = photos[section][index];
+
+    // Delete from Firebase Storage if it's a Storage URL
+    if (url && url.indexOf('firebasestorage') !== -1) {
+      try {
+        var ref = storage.refFromURL(url);
+        await ref.delete();
+      } catch(storageErr) {
+        console.warn('Could not delete from Storage (may already be removed):', storageErr);
+      }
+    }
+
+    photos[section].splice(index, 1);
+    await savePhotos(j.jobId, photos);
+    renderPhotos();
+  } catch(e) {
+    console.error('Error deleting photo:', e);
+    alert('Error deleting photo: ' + e.message);
+  }
 }
 
-function renderPhotoGrid(type) {
-  var containerId = 'photos-' + type;
-  var countId = 'count-' + type;
-  var container = document.getElementById(containerId);
-  var photos = currentPhotos[type] || [];
-
-  container.innerHTML = '';
-  document.getElementById(countId).textContent = photos.length + ' ' + (photos.length === 1 ? 'photo' : 'photos');
-
-  for (var i = 0; i < photos.length; i++) {
-    var photo = photos[i];
-    var thumb = document.createElement('div');
-    thumb.className = 'photo-thumb';
-
-    var img = document.createElement('img');
-    img.src = photo;
-    img.onclick = function(src) {
-      return function() { openLightbox(src); };
-    }(photo);
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'del-btn';
-    delBtn.textContent = 'x';
-    delBtn.onclick = function(idx, typ) {
-      return function(e) {
-        e.stopPropagation();
-        deletePhoto(idx, typ);
+function compressImage(file) {
+  return new Promise(function(resolve) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var MAX = 1200;
+        var w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob) {
+          resolve(blob);
+        }, 'image/jpeg', 0.6);
       };
-    }(i, type);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-    thumb.appendChild(img);
-    thumb.appendChild(delBtn);
-    container.appendChild(thumb);
+async function handlePhotos(event, sec) {
+  var j = cur();
+  if (!j) return;
+
+  var files = event.target.files;
+  if (!files.length) return;
+
+  var btn = document.getElementById('btn-' + sec);
+  var origText = btn.textContent;
+  btn.innerHTML = 'Uploading… <span class="loading-spinner"></span>';
+  btn.disabled = true;
+
+  try {
+    var photos = await loadPhotos(j.jobId);
+    var total = files.length;
+
+    for (var i = 0; i < total; i++) {
+      btn.innerHTML = 'Uploading ' + (i + 1) + '/' + total + '… <span class="loading-spinner"></span>';
+      var blob = await compressImage(files[i]);
+      var fileName = Date.now() + '_' + i + '.jpg';
+      var ref = storage.ref('photos/' + j.jobId + '/' + sec + '/' + fileName);
+      var snapshot = await ref.put(blob);
+      var url = await snapshot.ref.getDownloadURL();
+      photos[sec].push(url);
+    }
+
+    await savePhotos(j.jobId, photos);
+    btn.textContent = origText;
+    btn.disabled = false;
+    renderPhotos();
+  } catch(e) {
+    console.error('Error handling photos:', e);
+    alert('Error uploading photos: ' + e.message);
+    btn.textContent = origText;
+    btn.disabled = false;
   }
+
+  event.target.value = '';
 }
 
 function openLightbox(src) {
-  var overlay = document.createElement('div');
-  overlay.className = 'lightbox';
+  var lb = document.createElement('div');
+  lb.className = 'lightbox';
   var img = document.createElement('img');
   img.src = src;
-  overlay.appendChild(img);
-  overlay.onclick = function() { document.body.removeChild(overlay); };
-  document.body.appendChild(overlay);
-}
-
-async function handlePhotos(e, type) {
-  var files = e.target.files;
-  if (!files.length) return;
-
-  showLoadingOverlay();
-
-  for (var i = 0; i < files.length; i++) {
-    var file = files[i];
-    var reader = new FileReader();
-    reader.onload = function(evt, t) {
-      return function() {
-        currentPhotos[t].push(evt.target.result);
-      };
-    }(reader, type);
-    reader.readAsDataURL(file);
-  }
-
-  // Wait a moment for all reads to finish
-  await new Promise(function(resolve) { setTimeout(resolve, 500); });
-
-  var j = cur();
-  if (j) {
-    await savePhotos(j.jobId, currentPhotos);
-  }
-
-  renderPhotos();
-  hideLoadingOverlay();
-  e.target.value = '';
-}
-
-async function deletePhoto(index, type) {
-  if (!confirm('Delete this photo?')) return;
-
-  currentPhotos[type].splice(index, 1);
-  var j = cur();
-  if (j) {
-    await savePhotos(j.jobId, currentPhotos);
-  }
-
-  renderPhotos();
+  lb.appendChild(img);
+  lb.onclick = function() { lb.remove(); };
+  document.body.appendChild(lb);
 }
 
 /* ══════════════════════════════════════════
-   JOB MODALS
+   EDIT MODAL
    ══════════════════════════════════════════ */
-var modalOverlay = null;
-
 function openEditModal() {
   var j = cur();
   if (!j) return;
 
-  showModal(
-    'Edit Job',
-    '<div class="form-group"><label>Job Name</label><input type="text" id="edit-name" value="' + esc(j.jobName) + '"></div>' +
-    '<div class="form-group"><label>Address</label><input type="text" id="edit-address" value="' + esc(j.address) + '"></div>',
-    function() {
-      j.jobName = document.getElementById('edit-name').value;
-      j.address = document.getElementById('edit-address').value;
-      saveJob(j);
-      closeModal();
-      renderAll();
-    }
-  );
+  var html = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()">' +
+    '<div class="modal"><h2>Edit Job Info</h2>' +
+    '<div class="form-group"><label>Job Name</label><input id="edit-name" value="' + esc(j.jobName) + '"></div>' +
+    '<div class="form-group"><label>Address</label><input id="edit-addr" value="' + esc(j.address) + '"></div>' +
+    '<div class="btn-row">' +
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveEdit()">Save</button>' +
+    '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
 }
 
-function openNewJobModal() {
-  showModal(
-    'New Job',
-    '<div class="form-group"><label>Job Name</label><input type="text" id="new-name" value=""></div>' +
-    '<div class="form-group"><label>Address</label><input type="text" id="new-address" value=""></div>',
-    function() {
-      var newJob = makeSeedJob();
-      newJob.jobId = 'job_' + Date.now();
-      newJob.jobName = document.getElementById('new-name').value || 'New Job';
-      newJob.address = document.getElementById('new-address').value || '';
-      saveJob(newJob);
-      jobs.push(newJob);
-      currentId = newJob.jobId;
-      closeModal();
-      renderAll();
-    }
-  );
-}
-
-async function deleteCurrentJob() {
-  if (!confirm('Really delete this job and all its data?')) return;
-
+async function saveEdit() {
   var j = cur();
   if (!j) return;
 
-  await deleteJob(j.jobId);
-  jobs = jobs.filter(function(x) { return x.jobId !== j.jobId; });
-  if (jobs.length > 0) {
-    currentId = jobs[0].jobId;
-  } else {
-    currentId = null;
+  j.jobName = document.getElementById('edit-name').value;
+  j.address = document.getElementById('edit-addr').value;
+
+  try {
+    await saveJob(j);
+    closeModal();
+    renderJobSelect();
+    renderInfo();
+  } catch(e) {
+    console.error('Error saving edit:', e);
+    alert('Error saving: ' + e.message);
   }
-  closeModal();
-  renderAll();
-}
-
-function showModal(title, html, onSave) {
-  var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  modalOverlay = overlay;
-
-  var modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML =
-    '<h2>' + esc(title) + '</h2>' +
-    html +
-    '<div class="btn-row">' +
-    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
-    '<button class="btn btn-primary" onclick="savePendingModal()">Save</button>' +
-    '</div>';
-
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-
-  window.savePendingModal = onSave;
 }
 
 function closeModal() {
-  if (modalOverlay && modalOverlay.parentElement) {
-    document.body.removeChild(modalOverlay);
-  }
-  modalOverlay = null;
-  window.savePendingModal = null;
+  var overlays = document.querySelectorAll('.modal-overlay');
+  for (var i = 0; i < overlays.length; i++) overlays[i].remove();
 }
 
 /* ══════════════════════════════════════════
-   LOADING OVERLAY
+   NEW JOB
    ══════════════════════════════════════════ */
-function showLoadingOverlay() {
-  document.getElementById('loading-overlay').classList.remove('hidden');
+function openNewJobModal() {
+  var html = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()">' +
+    '<div class="modal"><h2>Create New Job</h2>' +
+    '<div class="form-group"><label>Job Name (e.g. client name)</label><input id="new-name" placeholder="The Smiths"></div>' +
+    '<div class="form-group"><label>Address</label><input id="new-addr" placeholder="456 Main St, Petaluma CA"></div>' +
+    '<div class="btn-row">' +
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveNewJob()">Create Job</button>' +
+    '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('new-name').focus();
 }
 
-function hideLoadingOverlay() {
-  document.getElementById('loading-overlay').classList.add('hidden');
+async function saveNewJob() {
+  var name = document.getElementById('new-name').value.trim();
+  var addr = document.getElementById('new-addr').value.trim();
+  if (!name) { alert('Please enter a job name.'); return; }
+
+  var newJob = {
+    jobId: 'job_' + Date.now(),
+    jobName: name,
+    address: addr,
+    status: 'active',
+    checklist: {
+      trash:       { checked: false, by: "", time: "" },
+      sweep:       { checked: false, by: "", time: "" },
+      nailHeads:   { checked: false, by: "", time: "" },
+      reducers:    { checked: false, by: "", time: "" },
+      baseboards:  { checked: false, by: "", time: "" },
+      tools:       { checked: false, by: "", time: "" },
+      powerCords:  { checked: false, by: "", time: "" },
+      cleaningKit: { checked: false, by: "", time: "" },
+      photo:       { checked: false, by: "", time: "" }
+    }
+  };
+
+  try {
+    jobs.push(newJob);
+    currentId = newJob.jobId;
+    await saveJob(newJob);
+    closeModal();
+    renderJobSelect();
+    renderAll();
+  } catch(e) {
+    console.error('Error creating new job:', e);
+    alert('Error creating job: ' + e.message);
+    jobs.pop();
+  }
 }
 
 /* ══════════════════════════════════════════
-   MAIN RENDER & INIT
+   DELETE JOB
+   ══════════════════════════════════════════ */
+async function deleteCurrentJob() {
+  var j = cur();
+  if (!j) return;
+  if (!confirm('Delete "' + j.jobName + '"? This cannot be undone.')) return;
+
+  try {
+    await deleteJob(j.jobId);
+
+    // Remove from array
+    for (var i = 0; i < jobs.length; i++) {
+      if (jobs[i].jobId === j.jobId) {
+        jobs.splice(i, 1);
+        break;
+      }
+    }
+
+    // If no jobs left, seed a blank one
+    if (jobs.length === 0) {
+      var seedJob = makeSeedJob();
+      jobs.push(seedJob);
+      await saveJob(seedJob);
+    }
+
+    currentId = jobs[0].jobId;
+    renderJobSelect();
+    renderAll();
+  } catch(e) {
+    console.error('Error deleting job:', e);
+    alert('Error deleting job: ' + e.message);
+  }
+}
+
+/* ══════════════════════════════════════════
+   RENDER ALL + INIT
    ══════════════════════════════════════════ */
 function renderAll() {
-  renderJobSelect();
   renderInfo();
   renderChecklist();
   renderPhotos();
 }
 
+function hideLoadingOverlay() {
+  var overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+}
+
 async function initApp() {
-  showLoadingOverlay();
   try {
     jobs = await loadJobs();
-    if (jobs.length > 0) {
-      currentId = jobs[0].jobId;
+    if (jobs.length === 0) {
+      var seedJob = makeSeedJob();
+      jobs.push(seedJob);
+      await saveJob(seedJob);
     }
+    currentId = jobs[0].jobId;
+
+    renderJobSelect();
     renderAll();
+  } catch(e) {
+    console.error('initApp failed:', e);
+    alert('Error initializing app: ' + e.message);
   } finally {
     hideLoadingOverlay();
   }
 }
 
-// Start the app
+// Run when DOM is ready
 function safeInit() {
   try {
     initApp();
   } catch(e) {
-    console.error('Init error:', e);
+    var el = document.getElementById('info-name');
+    if (el) el.textContent = 'Error: ' + e.message;
+    console.error('safeInit failed:', e);
     hideLoadingOverlay();
   }
 }
