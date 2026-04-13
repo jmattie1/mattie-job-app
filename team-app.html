@@ -249,6 +249,7 @@ var storage = firebase.storage();
    CONFIG
    ══════════════════════════════════════════ */
 var CREW_KEY = 'crew_name';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHwzoSv7KBqOMQMj3nF7jX2EsyeSQPKoukXOcEEtqiv8CxTZ8jn2MgttPPKvKvbQ5oVA/exec';
 
 var CHECKLIST_ITEMS = [
   { key: "trash",       emoji: "👑️", label: "Pick up trash" },
@@ -522,6 +523,32 @@ function compressImage(file) {
   });
 }
 
+
+/* ══════════════════════════════════════════
+   SYNC PHOTOS TO GOOGLE DRIVE
+   ══════════════════════════════════════════ */
+async function syncPhotosToDrive(jobName, photoUrls, photoType) {
+  if (!APPS_SCRIPT_URL || !photoUrls.length) return;
+  try {
+    var photos = photoUrls.map(function(url, i) {
+      return { url: url, type: photoType, fileName: photoType + '_' + Date.now() + '_' + i + '.jpg' };
+    });
+    var response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'teamPhotos', clientName: jobName, photos: photos }),
+      redirect: 'follow'
+    });
+    var result = await response.json();
+    if (result.success) {
+      console.log('Photos synced to Drive:', result.saved.length + ' files');
+    } else {
+      console.warn('Drive sync issue:', result.error);
+    }
+  } catch(e) {
+    console.warn('Drive sync failed (photos still saved to Firebase):', e.message);
+  }
+}
 async function handlePhotos(event, sec) {
   var j = cur(); if (!j) return;
   var files = event.target.files; if (!files.length) return;
@@ -542,6 +569,9 @@ async function handlePhotos(event, sec) {
     }
     await savePhotos(j.jobId, photos);
     btn.textContent = origText; btn.disabled = false; renderPhotos();
+    // Sync newly uploaded photos to Google Drive (runs in background)
+    var newUrls = photos[sec].slice(photos[sec].length - total);
+    syncPhotosToDrive(j.jobName, newUrls, sec);
   } catch(e) {
     console.error('Error handling photos:', e); alert('Error uploading photos: ' + e.message);
     btn.textContent = origText; btn.disabled = false;
