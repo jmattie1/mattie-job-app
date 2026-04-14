@@ -419,7 +419,7 @@ function PhotoSection({ title, photos, onAdd }) {
           </div>
         ))}
         <button
-          onClick={() => fileRef.current?.click()}
+          onClick={() => { if (fileRef.current) fileRef.current.click(); }}
           style={{
             width: 72, height: 72, borderRadius: 10, border: "2px dashed var(--gray-300)",
             background: "var(--gray-50)", display: "flex", flexDirection: "column",
@@ -581,7 +581,7 @@ function App() {
         if (j.id !== jobId) return j;
         const updated = j.photos[type].map(p =>
           p.timestamp === photoData.timestamp
-            ? { ...p, uploadStatus: json.success ? "done" : "error", driveUrl: json.saved?.[0]?.driveUrl }
+            ? { ...p, uploadStatus: json.success ? "done" : "error", driveUrl: (json.saved && json.saved[0]) ? json.saved[0].driveUrl : undefined }
             : p
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
