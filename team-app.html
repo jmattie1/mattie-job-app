@@ -69,6 +69,10 @@ const { useState, useEffect, useRef, useCallback } = React;
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHwzoSv7KBqOMQMj3nF7jX2EsyeSQPKoukXOcEEtqiv8CxTZ8jn2MgttPPKvKvbQ5oVA/exec";
+// Calendar sync can take a while on Apps Script; list-only is usually fast.
+const CREW_SYNC_TIMEOUT_MS = 120000;
+const CREW_LIST_AFTER_SYNC_MS = 90000;
+const CREW_LIST_ONLY_MS = 45000;
 const NAVY = "#1a2744";
 const GOLD = "#c8943e";
 
@@ -486,9 +490,10 @@ function App() {
     setServerError(null);
     try {
       if (sync) {
-        await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewSync`, { redirect: "follow" }, 20000);
+        await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewSync`, { redirect: "follow" }, CREW_SYNC_TIMEOUT_MS);
       }
-      const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewJobs&status=all`, { redirect: "follow" }, 15000);
+      const listTimeout = sync ? CREW_LIST_AFTER_SYNC_MS : CREW_LIST_ONLY_MS;
+      const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewJobs&status=all`, { redirect: "follow" }, listTimeout);
       const json = await res.json();
       if (!json.success || !Array.isArray(json.jobs)) throw new Error(json.error || "Invalid crew jobs response");
       const normalized = json.jobs.map(j => ({
@@ -520,7 +525,8 @@ function App() {
     }
   }, []);
 
-  useEffect(() => { fetchCrewJobs(true); }, [fetchCrewJobs]);
+  // Load saved jobs only — full calendar sync runs when the user taps Sync (avoids timeout on open).
+  useEffect(() => { fetchCrewJobs(false); }, [fetchCrewJobs]);
 
   const persistCrewJobUpdate = useCallback(async (jobId, patch) => {
     if (!APPS_SCRIPT_URL || !jobId) return;
