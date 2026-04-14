@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mattie's Crew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a2744;
+    --navy-light: #2a3d66;
+    --gold: #c8943e;
+    --gold-light: #e8b95e;
+    --green: #22c55e;
+    --green-bg: #dcfce7;
+    --green-dark: #16a34a;
+    --blue: #3b82f6;
+    --blue-bg: #dbeafe;
+    --red: #ef4444;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  input, textarea, select { font-family: inherit; }
+
+  /* ── Animations ── */
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes checkPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-60px) rotate(360deg); opacity: 0; } }
+  @keyframes progressPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.3); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
+  .slide-up { animation: slideUp 0.3s ease-out; }
+  .check-pop { animation: checkPop 0.3s ease-out; }
+  .fade-in { animation: fadeIn 0.2s ease-out; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── Config ──────────────────────────────────────────────────────────────────
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHwzoSv7KBqOMQMj3nF7jX2EsyeSQPKoukXOcEEtqiv8CxTZ8jn2MgttPPKvKvbQ5oVA/exec";
+const NAVY = "#1a2744";
+const GOLD = "#c8943e";
+
+// ── Translations ────────────────────────────────────────────────────────────
+const T = {
+  en: {
+    appTitle: "Mattie's Crew",
+    myJobs: "My Jobs",
+    noJobs: "No active jobs right now",
+    noJobsSub: "Jobs will appear here when they're scheduled",
+    installation: "Installation",
+    sandFinish: "Sand & Finish",
+    installSandFinish: "Install + Sand & Finish",
+    jobInfo: "Job Info",
+    checklist: "Checklist",
+    photos: "Photos",
+    progress: "Progress",
+    complete: "Complete",
+    sqft: "sq ft",
+    rooms: "Rooms",
+    woodSpecies: "Wood Species",
+    finishType: "Finish Type",
+    installType: "Install Type",
+    product: "Product",
+    customer: "Customer",
+    address: "Address",
+    phone: "Phone",
+    beforePhotos: "Before Photos",
+    afterPhotos: "After Photos",
+    takePhoto: "Take Photo",
+    uploadPhoto: "Upload Photo",
+    back: "Back",
+    startJob: "Start Job",
+    markComplete: "Mark Complete",
+    completed: "Completed!",
+    greatWork: "Great work!",
+    dailyProgress: "Daily Progress",
+    dragToUpdate: "Drag to update",
+    lang: "Español",
+    // Installation checklist
+    i_prepArea: "Prep work area — remove furniture & cover surfaces",
+    i_acclimate: "Material acclimated & inspected",
+    i_moistureTest: "Moisture test completed",
+    i_subfloorPrep: "Subfloor prep — clean, level, repair",
+    i_layoutPlan: "Layout planned — first row snapped",
+    i_moistureBarrier: "Moisture barrier / underlayment installed",
+    i_installProgress: "Flooring installation in progress",
+    i_fillNailHeads: "Nail heads filled & sanded flush",
+    i_transitions: "Transitions & thresholds installed",
+    i_baseboards: "Baseboards installed & caulked",
+    i_carpetTucked: "Carpet tucked at transitions",
+    i_finalClean: "Final clean & debris removed",
+    i_walkthrough: "Final walkthrough with homeowner",
+    // Sand & Finish checklist
+    sf_prepSanding: "Prep for sanding — clear room, tape off",
+    sf_bigCut1: "Big machine — 1st cut (36 grit)",
+    sf_bigCut2: "Big machine — 2nd cut (60 grit)",
+    sf_bigCut3: "Big machine — 3rd cut (80/100 grit)",
+    sf_edging: "Edger — all edges & corners done",
+    sf_scraping: "Detail scraping — closets, corners, radiators",
+    sf_screening: "Screen / buff between coats",
+    sf_trowelFiller: "Full trowel filler applied",
+    sf_fillerDry: "Filler dry & re-sanded smooth",
+    sf_vacDust: "Vacuum & tack all dust",
+    sf_sealerStain: "Sealer or stain applied",
+    sf_sealerDry: "Sealer/stain dry — check for issues",
+    sf_firstCoat: "First coat of finish",
+    sf_firstCoatDry: "First coat cured — light screen",
+    sf_secondCoat: "Second coat of finish",
+    sf_finalCure: "Final cure — tape off, fans running",
+    sf_walkthrough: "Final walkthrough with homeowner",
+    // Achievements
+    achvFirstJob: "First Job!",
+    achvPhotoPro: "Photo Pro",
+    achvStreak3: "3-Day Streak",
+    achvStreak7: "7-Day Streak",
+    achvPerfect: "Perfect Finish",
+  },
+  es: {
+    appTitle: "Equipo Mattie's",
+    myJobs: "Mis Trabajos",
+    noJobs: "No hay trabajos activos",
+    noJobsSub: "Los trabajos aparecerán aquí cuando estén programados",
+    installation: "Instalación",
+    sandFinish: "Lijado y Acabado",
+    installSandFinish: "Instalación + Lijado",
+    jobInfo: "Info del Trabajo",
+    checklist: "Lista de Tareas",
+    photos: "Fotos",
+    progress: "Progreso",
+    complete: "Completo",
+    sqft: "pies²",
+    rooms: "Habitaciones",
+    woodSpecies: "Tipo de Madera",
+    finishType: "Tipo de Acabado",
+    installType: "Tipo de Instalación",
+    product: "Producto",
+    customer: "Cliente",
+    address: "Dirección",
+    phone: "Teléfono",
+    beforePhotos: "Fotos Antes",
+    afterPhotos: "Fotos Después",
+    takePhoto: "Tomar Foto",
+    uploadPhoto: "Subir Foto",
+    back: "Atrás",
+    startJob: "Iniciar Trabajo",
+    markComplete: "Marcar Completo",
+    completed: "¡Completado!",
+    greatWork: "¡Buen trabajo!",
+    dailyProgress: "Progreso Diario",
+    dragToUpdate: "Desliza para actualizar",
+    lang: "English",
+    // Installation checklist
+    i_prepArea: "Preparar área — mover muebles y cubrir superficies",
+    i_acclimate: "Material aclimatado e inspeccionado",
+    i_moistureTest: "Prueba de humedad completada",
+    i_subfloorPrep: "Subpiso preparado — limpio, nivelado, reparado",
+    i_layoutPlan: "Diseño planificado — primera fila marcada",
+    i_moistureBarrier: "Barrera de humedad instalada",
+    i_installProgress: "Instalación de piso en progreso",
+    i_fillNailHeads: "Clavos rellenados y lijados",
+    i_transitions: "Transiciones y umbrales instalados",
+    i_baseboards: "Zócalos instalados y sellados",
+    i_carpetTucked: "Alfombra ajustada en transiciones",
+    i_finalClean: "Limpieza final y escombros removidos",
+    i_walkthrough: "Revisión final con el propietario",
+    // Sand & Finish checklist
+    sf_prepSanding: "Preparar para lijado — despejar, cubrir con cinta",
+    sf_bigCut1: "Máquina grande — 1er corte (grano 36)",
+    sf_bigCut2: "Máquina grande — 2do corte (grano 60)",
+    sf_bigCut3: "Máquina grande — 3er corte (grano 80/100)",
+    sf_edging: "Bordeadora — todos los bordes y esquinas",
+    sf_scraping: "Raspado detallado — clósets, esquinas, radiadores",
+    sf_screening: "Cribado / pulido entre capas",
+    sf_trowelFiller: "Masilla de llana completa aplicada",
+    sf_fillerDry: "Masilla seca y re-lijada",
+    sf_vacDust: "Aspirar y limpiar todo el polvo",
+    sf_sealerStain: "Sellador o tinte aplicado",
+    sf_sealerDry: "Sellador/tinte seco — revisar problemas",
+    sf_firstCoat: "Primera capa de acabado",
+    sf_firstCoatDry: "Primera capa curada — cribado ligero",
+    sf_secondCoat: "Segunda capa de acabado",
+    sf_finalCure: "Curado final — cinta puesta, ventiladores",
+    sf_walkthrough: "Revisión final con el propietario",
+    // Achievements
+    achvFirstJob: "¡Primer Trabajo!",
+    achvPhotoPro: "Pro de Fotos",
+    achvStreak3: "Racha de 3 Días",
+    achvStreak7: "Racha de 7 Días",
+    achvPerfect: "Acabado Perfecto",
+  }
+};
+
+// ── Checklist definitions ───────────────────────────────────────────────────
+const INSTALL_CHECKLIST = [
+  "i_prepArea", "i_acclimate", "i_moistureTest", "i_subfloorPrep",
+  "i_layoutPlan", "i_moistureBarrier", "i_installProgress", "i_fillNailHeads",
+  "i_transitions", "i_baseboards", "i_carpetTucked", "i_finalClean", "i_walkthrough"
+];
+
+const SAND_FINISH_CHECKLIST = [
+  "sf_prepSanding", "sf_bigCut1", "sf_bigCut2", "sf_bigCut3",
+  "sf_edging", "sf_scraping", "sf_screening", "sf_trowelFiller",
+  "sf_fillerDry", "sf_vacDust", "sf_sealerStain", "sf_sealerDry",
+  "sf_firstCoat", "sf_firstCoatDry", "sf_secondCoat", "sf_finalCure", "sf_walkthrough"
+];
+const INSTALL_SF_CHECKLIST = [...INSTALL_CHECKLIST, ...SAND_FINISH_CHECKLIST];
+
+function getChecklistForJob(jobType) {
+  if (jobType === "sandFinish") return SAND_FINISH_CHECKLIST;
+  if (jobType === "installSandFinish") return INSTALL_SF_CHECKLIST;
+  return INSTALL_CHECKLIST;
+}
+
+// ── Demo data (will be replaced with calendar-driven data) ──────────────────
+const DEMO_JOBS = [];
+
+// ── Persistence helpers ─────────────────────────────────────────────────────
+const LS_KEY = "mhwf_crew_jobs";
+const LS_LANG = "mhwf_crew_lang";
+const LS_ACHV = "mhwf_crew_achievements";
+
+function loadJobs() {
+  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+function saveJobs(jobs) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(jobs)); } catch {}
+}
+function loadLang() {
+  try { return localStorage.getItem(LS_LANG) || "en"; } catch { return "en"; }
+}
+function loadAchievements() {
+  try { const r = localStorage.getItem(LS_ACHV); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+function saveAchievements(a) {
+  try { localStorage.setItem(LS_ACHV, JSON.stringify(a)); } catch {}
+}
+
+// ── Components ──────────────────────────────────────────────────────────────
+
+// Language toggle pill
+function LangToggle({ lang, setLang }) {
+  return (
+    <button
+      onClick={() => {
+        const next = lang === "en" ? "es" : "en";
+        setLang(next);
+        localStorage.setItem(LS_LANG, next);
+      }}
+      style={{
+        background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
+        borderRadius: 20, padding: "5px 14px", fontSize: 12, fontWeight: 600,
+        color: "white", letterSpacing: "0.3px", backdropFilter: "blur(4px)",
+      }}>
+      {T[lang].lang}
+    </button>
+  );
+}
+
+// Achievement badge
+function AchievementBadge({ icon, label, unlocked }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+      opacity: unlocked ? 1 : 0.3, filter: unlocked ? "none" : "grayscale(1)",
+      transition: "all 0.3s",
+    }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",
+        background: unlocked ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "var(--gray-200)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 22, boxShadow: unlocked ? "0 2px 10px rgba(245,158,11,0.3)" : "none",
+      }}>
+        {icon}
+      </div>
+      <span style={{ fontSize: 10, fontWeight: 600, color: unlocked ? NAVY : "var(--gray-400)", textAlign: "center" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// Progress slider
+function ProgressSlider({ value, onChange, t }) {
+  const pct = Math.round(value);
+  const color = pct < 30 ? "#ef4444" : pct < 70 ? "#f59e0b" : "#22c55e";
+  return (
+    <div style={{ padding: "16px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gray-600)" }}>{t.dailyProgress}</span>
+        <span style={{ fontSize: 22, fontWeight: 900, color }}>{pct}%</span>
+      </div>
+      <div style={{ position: "relative", height: 32, background: "var(--gray-200)", borderRadius: 16, overflow: "hidden" }}>
+        <div style={{
+          position: "absolute", left: 0, top: 0, bottom: 0,
+          width: `${pct}%`, borderRadius: 16,
+          background: `linear-gradient(90deg, ${color}dd, ${color})`,
+          transition: "width 0.3s ease, background 0.3s",
+          animation: pct > 0 ? "progressPulse 2s infinite" : "none",
+        }} />
+        <input
+          type="range" min="0" max="100" value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          style={{
+            position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
+            opacity: 0, cursor: "pointer", WebkitAppearance: "none", margin: 0,
+          }}
+        />
+        <div style={{
+          position: "absolute", left: `calc(${pct}% - 16px)`, top: 0,
+          width: 32, height: 32, borderRadius: "50%",
+          background: "white", border: `3px solid ${color}`,
+          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+          transition: "left 0.1s",
+          pointerEvents: "none",
+        }} />
+      </div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "var(--gray-400)", marginTop: 4 }}>
+        {t.dragToUpdate}
+      </div>
+    </div>
+  );
+}
+
+// Checklist item with satisfying check animation
+function CheckItem({ label, checked, onToggle, index }) {
+  return (
+    <div
+      onClick={onToggle}
+      className="slide-up"
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "14px 16px", background: checked ? "var(--green-bg)" : "white",
+        borderRadius: "var(--radius-sm)", marginBottom: 6,
+        border: checked ? "1px solid #bbf7d0" : "1px solid var(--gray-200)",
+        cursor: "pointer", transition: "all 0.2s",
+        animationDelay: `${index * 30}ms`, animationFillMode: "backwards",
+      }}>
+      <div className={checked ? "check-pop" : ""} style={{
+        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+        border: checked ? "none" : "2px solid var(--gray-300)",
+        background: checked ? "var(--green)" : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.2s",
+      }}>
+        {checked && <span style={{ color: "white", fontSize: 16, fontWeight: 900 }}>✓</span>}
+      </div>
+      <span style={{
+        fontSize: 14, fontWeight: 500, flex: 1,
+        color: checked ? "var(--green-dark)" : "var(--gray-700)",
+        textDecoration: checked ? "line-through" : "none",
+        transition: "all 0.2s",
+      }}>
+        {label}
+      </span>
+      {checked && <span style={{ fontSize: 16 }}>🎯</span>}
+    </div>
+  );
+}
+
+// Photo section
+function PhotoSection({ title, photos, onAdd }) {
+  const fileRef = useRef(null);
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+        {title} ({photos.length})
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {photos.map((p, i) => (
+          <div key={i} style={{ width: 72, height: 72, borderRadius: 10, overflow: "hidden", border: "2px solid var(--gray-200)", position: "relative" }}>
+            <img src={p.dataUrl || p.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {p.uploadStatus === "uploading" && (
+              <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18, animation: "checkPop 1s infinite" }}>⏳</span>
+              </div>
+            )}
+            {p.uploadStatus === "done" && (
+              <div style={{ position: "absolute", bottom: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ color: "white", fontSize: 10, fontWeight: 900 }}>✓</span>
+              </div>
+            )}
+            {p.uploadStatus === "error" && (
+              <div style={{ position: "absolute", bottom: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "var(--red)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ color: "white", fontSize: 10, fontWeight: 900 }}>!</span>
+              </div>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={() => fileRef.current?.click()}
+          style={{
+            width: 72, height: 72, borderRadius: 10, border: "2px dashed var(--gray-300)",
+            background: "var(--gray-50)", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 2,
+            color: "var(--gray-400)", fontSize: 24,
+          }}>
+          <span>📷</span>
+          <span style={{ fontSize: 9, fontWeight: 600 }}>+</span>
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple
+        style={{ display: "none" }}
+        onChange={e => {
+          Array.from(e.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = ev => onAdd({ dataUrl: ev.target.result, timestamp: new Date().toISOString() });
+            reader.readAsDataURL(file);
+          });
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Main App ────────────────────────────────────────────────────────────────
+function App() {
+  const [lang, setLang] = useState(loadLang);
+  const [jobs, setJobs] = useState(loadJobs);
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [activeTab, setActiveTab] = useState("checklist");
+  const [achievements, setAchievements] = useState(loadAchievements);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [serverError, setServerError] = useState(null);
+
+  const t = T[lang];
+  const selectedJob = jobs.find(j => j.id === selectedJobId);
+
+  // Auto-save
+  useEffect(() => { saveJobs(jobs); }, [jobs]);
+
+  const fetchCrewJobs = useCallback(async (sync = false) => {
+    if (!APPS_SCRIPT_URL) return;
+    setLoadingJobs(true);
+    setServerError(null);
+    try {
+      const suffix = sync ? "&sync=1" : "";
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=crewJobs&status=active${suffix}`, { redirect: "follow" });
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.jobs)) throw new Error(json.error || "Invalid crew jobs response");
+      const normalized = json.jobs.map(j => ({
+        id: j.jobId || j.id,
+        jobId: j.jobId || j.id,
+        sheetId: j.sheetId || "",
+        clientName: j.clientName || "Unnamed Client",
+        address: j.address || "",
+        phone: j.phone || "",
+        jobType: j.jobType || "installation",
+        sqft: Number(j.sqft || 0),
+        rooms: j.roomsSummary || "",
+        woodSpecies: j.woodSpecies || "",
+        installType: j.installType || "",
+        finishType: j.finishType || "",
+        product: j.product || "",
+        date: j.date || new Date().toISOString(),
+        checkedItems: j.checkedItems || {},
+        progress: Number(j.progress || 0),
+        photos: j.photos || { before: [], after: [] },
+        status: j.status || "active",
+      }));
+      setJobs(normalized);
+    } catch (err) {
+      setServerError(err.message || "Could not load jobs");
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCrewJobs(true); }, [fetchCrewJobs]);
+
+  const persistCrewJobUpdate = useCallback(async (jobId, patch) => {
+    if (!APPS_SCRIPT_URL || !jobId) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "crewJobUpdate",
+          jobId,
+          ...patch,
+        }),
+      });
+    } catch {
+      // Keep local UI responsive even when network is flaky.
+    }
+  }, []);
+
+  // Update a specific job
+  const updateJob = (id, updates) => {
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, ...updates } : j));
+    persistCrewJobUpdate(id, updates);
+  };
+
+  // Toggle checklist item
+  const toggleCheck = (jobId, itemKey) => {
+    setJobs(prev => prev.map(j => {
+      if (j.id !== jobId) return j;
+      const checked = { ...j.checkedItems, [itemKey]: !j.checkedItems[itemKey] };
+      const list = getChecklistForJob(j.jobType);
+      const doneCount = list.filter(k => checked[k]).length;
+      const progress = Math.round((doneCount / list.length) * 100);
+
+      // Check for completion confetti
+      if (progress === 100 && j.progress < 100) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2000);
+      }
+
+      persistCrewJobUpdate(j.id, { checkedItems: checked, progress });
+      return { ...j, checkedItems: checked, progress };
+    }));
+  };
+
+  // Add photo — saves locally + uploads to Google Drive
+  const addPhoto = async (jobId, type, photoData) => {
+    // Save locally immediately
+    const photoWithStatus = { ...photoData, uploadStatus: "uploading" };
+    setJobs(prev => prev.map(j => {
+      if (j.id !== jobId) return j;
+      const photos = { ...j.photos, [type]: [...j.photos[type], photoWithStatus] };
+      return { ...j, photos };
+    }));
+
+    // Upload to Google Drive via Apps Script
+    const job = jobs.find(j => j.id === jobId);
+    if (!job || !APPS_SCRIPT_URL) return;
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "teamPhotos",
+          jobId: job.id,
+          sheetId: job.sheetId || "",
+          clientName: job.clientName,
+          photos: [{
+            base64: photoData.dataUrl,
+            type: type,
+            fileName: `${type}_${Date.now()}.jpg`,
+            mimeType: "image/jpeg",
+          }],
+        }),
+      });
+      const json = await res.json();
+      // Update upload status
+      setJobs(prev => prev.map(j => {
+        if (j.id !== jobId) return j;
+        const updated = j.photos[type].map(p =>
+          p.timestamp === photoData.timestamp
+            ? { ...p, uploadStatus: json.success ? "done" : "error", driveUrl: json.saved?.[0]?.driveUrl }
+            : p
+        );
+        return { ...j, photos: { ...j.photos, [type]: updated } };
+      }));
+    } catch {
+      setJobs(prev => prev.map(j => {
+        if (j.id !== jobId) return j;
+        const updated = j.photos[type].map(p =>
+          p.timestamp === photoData.timestamp ? { ...p, uploadStatus: "error" } : p
+        );
+        return { ...j, photos: { ...j.photos, [type]: updated } };
+      }));
+    }
+  };
+
+  // ── Job list view ─────────────────────────────────────────────────────────
+  if (!selectedJob) {
+    return (
+      <div style={{ minHeight: "100vh", minHeight: "100dvh" }}>
+        {/* Header */}
+        <div style={{
+          background: `linear-gradient(135deg, ${NAVY}, ${NAVY}ee)`,
+          padding: "env(safe-area-inset-top, 16px) 20px 24px",
+          paddingTop: "calc(env(safe-area-inset-top, 16px) + 16px)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "white" }}>{t.appTitle}</div>
+              <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, letterSpacing: "0.5px", marginTop: 2 }}>HARDWOOD FLOORING</div>
+            </div>
+            <LangToggle lang={lang} setLang={setLang} />
+          </div>
+
+          {/* Achievements row */}
+          <div style={{
+            display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8,
+            WebkitOverflowScrolling: "touch",
+          }}>
+            <AchievementBadge icon="🏆" label={t.achvFirstJob} unlocked={achievements.includes("firstJob")} />
+            <AchievementBadge icon="📸" label={t.achvPhotoPro} unlocked={achievements.includes("photoPro")} />
+            <AchievementBadge icon="🔥" label={t.achvStreak3} unlocked={achievements.includes("streak3")} />
+            <AchievementBadge icon="⚡" label={t.achvStreak7} unlocked={achievements.includes("streak7")} />
+            <AchievementBadge icon="💎" label={t.achvPerfect} unlocked={achievements.includes("perfect")} />
+          </div>
+        </div>
+
+        {/* Jobs list */}
+        <div style={{ padding: "20px 16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", letterSpacing: "0.6px", textTransform: "uppercase" }}>
+            {t.myJobs}
+            </div>
+            <button
+              onClick={() => fetchCrewJobs(true)}
+              disabled={loadingJobs}
+              style={{ fontSize: 11, fontWeight: 700, color: NAVY, background: "white", border: "1px solid var(--gray-300)", borderRadius: 8, padding: "6px 10px" }}>
+              {loadingJobs ? "Syncing..." : "Sync"}
+            </button>
+          </div>
+          {serverError && (
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 10px" }}>
+              {serverError}
+            </div>
+          )}
+          </div>
+
+          {jobs.filter(j => j.status === "active").length === 0 ? (
+            <div className="fade-in" style={{
+              textAlign: "center", padding: "48px 24px", background: "white",
+              borderRadius: "var(--radius)", border: "1px solid var(--gray-200)",
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--gray-600)", marginBottom: 4 }}>{t.noJobs}</div>
+              <div style={{ fontSize: 13, color: "var(--gray-400)" }}>{t.noJobsSub}</div>
+            </div>
+          ) : (
+            jobs.filter(j => j.status === "active").map((job, i) => {
+              const isSandFinish = job.jobType === "sandFinish";
+              const isInstallSf = job.jobType === "installSandFinish";
+              const isInstall = !isSandFinish && !isInstallSf;
+              const typeColor = isInstall ? "var(--blue)" : GOLD;
+              const typeBg = isInstall ? "var(--blue-bg)" : "#fef3c7";
+              const list = getChecklistForJob(job.jobType);
+              const doneCount = list.filter(k => job.checkedItems[k]).length;
+              return (
+                <div
+                  key={job.id}
+                  className="slide-up"
+                  onClick={() => { setSelectedJobId(job.id); setActiveTab("checklist"); }}
+                  style={{
+                    background: "white", borderRadius: "var(--radius)", padding: "18px 16px",
+                    marginBottom: 12, boxShadow: "var(--shadow)", cursor: "pointer",
+                    border: "1px solid var(--gray-100)",
+                    animationDelay: `${i * 60}ms`, animationFillMode: "backwards",
+                  }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, marginBottom: 3 }}>{job.clientName}</div>
+                      <div style={{ fontSize: 12, color: "var(--gray-500)" }}>{job.address}</div>
+                    </div>
+                    <div style={{
+                      padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                      background: typeBg, color: typeColor, whiteSpace: "nowrap",
+                    }}>
+                      {isInstall ? t.installation : isInstallSf ? t.installSandFinish : t.sandFinish}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ flex: 1, height: 6, background: "var(--gray-100)", borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{
+                        height: "100%", borderRadius: 3, transition: "width 0.5s",
+                        width: `${job.progress}%`,
+                        background: `linear-gradient(90deg, ${typeColor}aa, ${typeColor})`,
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: typeColor, minWidth: 32, textAlign: "right" }}>
+                      {doneCount}/{list.length}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                    <span style={{ fontSize: 11, color: "var(--gray-400)" }}>📐 {job.sqft} {t.sqft}</span>
+                    <span style={{ fontSize: 11, color: "var(--gray-400)" }}>🪵 {job.woodSpecies}</span>
+                    <span style={{ fontSize: 11, color: "var(--gray-400)" }}>📅 {new Date(job.date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Job detail view ───────────────────────────────────────────────────────
+  const isSandFinish = selectedJob.jobType === "sandFinish";
+  const isInstallSf = selectedJob.jobType === "installSandFinish";
+  const isInstall = !isSandFinish && !isInstallSf;
+  const checklist = getChecklistForJob(selectedJob.jobType);
+  const typeColor = isInstall ? "var(--blue)" : GOLD;
+  const doneCount = checklist.filter(k => selectedJob.checkedItems[k]).length;
+
+  return (
+    <div style={{ minHeight: "100vh", minHeight: "100dvh", paddingBottom: 80 }}>
+      {/* Confetti burst */}
+      {showConfetti && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", zIndex: 999 }}>
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              left: `${Math.random() * 100}%`, top: `${40 + Math.random() * 30}%`,
+              fontSize: 20, animation: `confetti ${1 + Math.random()}s ease-out forwards`,
+              animationDelay: `${Math.random() * 0.5}s`,
+            }}>
+              {["🎉", "⭐", "🔥", "💪", "🏆", "✨"][Math.floor(Math.random() * 6)]}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{
+        background: `linear-gradient(135deg, ${NAVY}, ${NAVY}ee)`,
+        padding: "env(safe-area-inset-top, 12px) 16px 14px",
+        paddingTop: "calc(env(safe-area-inset-top, 12px) + 12px)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <button onClick={() => setSelectedJobId(null)} style={{
+            background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 14px",
+            color: "white", fontSize: 13, fontWeight: 600,
+          }}>
+            ← {t.back}
+          </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {selectedJob.clientName}
+            </div>
+            <div style={{ fontSize: 11, color: GOLD, fontWeight: 600 }}>
+              {isInstall ? t.installation : isInstallSf ? t.installSandFinish : t.sandFinish} • {selectedJob.sqft} {t.sqft}
+            </div>
+          </div>
+          <LangToggle lang={lang} setLang={setLang} />
+        </div>
+
+        {/* Compact progress */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 3 }}>
+            <div style={{
+              height: "100%", borderRadius: 3, transition: "width 0.3s",
+              width: `${selectedJob.progress}%`,
+              background: `linear-gradient(90deg, var(--green), #4ade80)`,
+            }} />
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{selectedJob.progress}%</span>
+        </div>
+      </div>
+
+      {/* Tab bar */}
+      <div style={{
+        display: "flex", background: "white", borderBottom: "1px solid var(--gray-200)",
+        position: "sticky", top: 0, zIndex: 10,
+      }}>
+        {["checklist", "jobInfo", "photos"].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1, padding: "12px 8px", fontSize: 12, fontWeight: 700,
+              color: activeTab === tab ? NAVY : "var(--gray-400)",
+              background: "transparent",
+              borderBottom: activeTab === tab ? `3px solid ${NAVY}` : "3px solid transparent",
+              textTransform: "uppercase", letterSpacing: "0.5px",
+              transition: "all 0.2s",
+            }}>
+            {tab === "checklist" ? `✓ ${t.checklist}` : tab === "jobInfo" ? `📋 ${t.jobInfo}` : `📷 ${t.photos}`}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="fade-in" style={{ padding: "16px" }}>
+
+        {/* ── Checklist Tab ── */}
+        {activeTab === "checklist" && (
+          <div>
+            {isInstall && (
+              <ProgressSlider
+                value={selectedJob.progress}
+                onChange={v => updateJob(selectedJob.id, { progress: v })}
+                t={t}
+              />
+            )}
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              {t.checklist} — {doneCount}/{checklist.length}
+            </div>
+            {checklist.map((key, i) => (
+              <CheckItem
+                key={key}
+                label={t[key]}
+                checked={!!selectedJob.checkedItems[key]}
+                onToggle={() => toggleCheck(selectedJob.id, key)}
+                index={i}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Job Info Tab (Tear Sheet) ── */}
+        {activeTab === "jobInfo" && (
+          <div>
+            {/* Customer card */}
+            <div style={{
+              background: "white", borderRadius: "var(--radius)", padding: 18,
+              border: "1px solid var(--gray-200)", marginBottom: 12, boxShadow: "var(--shadow)",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>
+                {t.customer}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, marginBottom: 6 }}>{selectedJob.clientName}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 14 }}>📍</span>
+                <span style={{ fontSize: 14, color: "var(--gray-600)" }}>{selectedJob.address}</span>
+              </div>
+              {selectedJob.phone && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>📞</span>
+                  <a href={`tel:${selectedJob.phone}`} style={{ fontSize: 14, color: "var(--blue)", fontWeight: 600, textDecoration: "none" }}>
+                    {selectedJob.phone}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Job details card */}
+            <div style={{
+              background: "white", borderRadius: "var(--radius)", padding: 18,
+              border: "1px solid var(--gray-200)", boxShadow: "var(--shadow)",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>
+                {t.jobInfo}
+              </div>
+              {[
+                [isInstall ? t.installType : t.finishType, isInstall ? selectedJob.installType : selectedJob.finishType],
+                [t.sqft, `${selectedJob.sqft} ${t.sqft}`],
+                [t.rooms, selectedJob.rooms],
+                [t.woodSpecies, selectedJob.woodSpecies],
+                [t.product, selectedJob.product],
+                [t.finishType, selectedJob.finishType],
+              ].filter(([, v]) => v).map(([label, value], i) => (
+                <div key={i} style={{
+                  display: "flex", justifyContent: "space-between", padding: "10px 0",
+                  borderBottom: i < 5 ? "1px solid var(--gray-100)" : "none",
+                }}>
+                  <span style={{ fontSize: 13, color: "var(--gray-500)", fontWeight: 500 }}>{label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, textAlign: "right", maxWidth: "60%" }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Photos Tab ── */}
+        {activeTab === "photos" && (
+          <div>
+            <PhotoSection
+              title={t.beforePhotos}
+              photos={selectedJob.photos.before}
+              onAdd={photo => addPhoto(selectedJob.id, "before", photo)}
+            />
+            <PhotoSection
+              title={t.afterPhotos}
+              photos={selectedJob.photos.after}
+              onAdd={photo => addPhoto(selectedJob.id, "after", photo)}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
