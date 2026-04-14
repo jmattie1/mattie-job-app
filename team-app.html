@@ -273,6 +273,13 @@ function saveAchievements(a) {
   try { localStorage.setItem(LS_ACHV, JSON.stringify(a)); } catch {}
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  return await Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs)),
+  ]);
+}
+
 // ── Components ──────────────────────────────────────────────────────────────
 
 // Language toggle pill
@@ -474,8 +481,10 @@ function App() {
     setLoadingJobs(true);
     setServerError(null);
     try {
-      const suffix = sync ? "&sync=1" : "";
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=crewJobs&status=all${suffix}`, { redirect: "follow" });
+      if (sync) {
+        await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewSync`, { redirect: "follow" }, 20000);
+      }
+      const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewJobs&status=all`, { redirect: "follow" }, 15000);
       const json = await res.json();
       if (!json.success || !Array.isArray(json.jobs)) throw new Error(json.error || "Invalid crew jobs response");
       const normalized = json.jobs.map(j => ({
