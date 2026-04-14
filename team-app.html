@@ -77,6 +77,9 @@ const T = {
   en: {
     appTitle: "Mattie's Crew",
     myJobs: "My Jobs",
+    showArchived: "Show Archived",
+    hideArchived: "Hide Archived",
+    archived: "Archived",
     noJobs: "No active jobs right now",
     noJobsSub: "Jobs will appear here when they're scheduled",
     installation: "Installation",
@@ -150,6 +153,9 @@ const T = {
   es: {
     appTitle: "Equipo Mattie's",
     myJobs: "Mis Trabajos",
+    showArchived: "Ver Archivados",
+    hideArchived: "Ocultar Archivados",
+    archived: "Archivado",
     noJobs: "No hay trabajos activos",
     noJobsSub: "Los trabajos aparecerán aquí cuando estén programados",
     installation: "Instalación",
@@ -455,6 +461,7 @@ function App() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [serverError, setServerError] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const t = T[lang];
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -468,7 +475,7 @@ function App() {
     setServerError(null);
     try {
       const suffix = sync ? "&sync=1" : "";
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=crewJobs&status=active${suffix}`, { redirect: "follow" });
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=crewJobs&status=all${suffix}`, { redirect: "follow" });
       const json = await res.json();
       if (!json.success || !Array.isArray(json.jobs)) throw new Error(json.error || "Invalid crew jobs response");
       const normalized = json.jobs.map(j => ({
@@ -634,12 +641,19 @@ function App() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", letterSpacing: "0.6px", textTransform: "uppercase" }}>
             {t.myJobs}
             </div>
-            <button
-              onClick={() => fetchCrewJobs(true)}
-              disabled={loadingJobs}
-              style={{ fontSize: 11, fontWeight: 700, color: NAVY, background: "white", border: "1px solid var(--gray-300)", borderRadius: 8, padding: "6px 10px" }}>
-              {loadingJobs ? "Syncing..." : "Sync"}
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                style={{ fontSize: 11, fontWeight: 700, color: NAVY, background: "white", border: "1px solid var(--gray-300)", borderRadius: 8, padding: "6px 10px" }}>
+                {showArchived ? t.hideArchived : t.showArchived}
+              </button>
+              <button
+                onClick={() => fetchCrewJobs(true)}
+                disabled={loadingJobs}
+                style={{ fontSize: 11, fontWeight: 700, color: NAVY, background: "white", border: "1px solid var(--gray-300)", borderRadius: 8, padding: "6px 10px" }}>
+                {loadingJobs ? "Syncing..." : "Sync"}
+              </button>
+            </div>
           </div>
           {serverError && (
             <div style={{ marginBottom: 10, fontSize: 12, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 10px" }}>
@@ -648,7 +662,7 @@ function App() {
           )}
           </div>
 
-          {jobs.filter(j => j.status === "active").length === 0 ? (
+          {jobs.filter(j => showArchived ? true : (j.status === "active" || j.status === "completed")).length === 0 ? (
             <div className="fade-in" style={{
               textAlign: "center", padding: "48px 24px", background: "white",
               borderRadius: "var(--radius)", border: "1px solid var(--gray-200)",
@@ -658,7 +672,7 @@ function App() {
               <div style={{ fontSize: 13, color: "var(--gray-400)" }}>{t.noJobsSub}</div>
             </div>
           ) : (
-            jobs.filter(j => j.status === "active").map((job, i) => {
+            jobs.filter(j => showArchived ? true : (j.status === "active" || j.status === "completed")).map((job, i) => {
               const isSandFinish = job.jobType === "sandFinish";
               const isInstallSf = job.jobType === "installSandFinish";
               const isInstall = !isSandFinish && !isInstallSf;
@@ -689,6 +703,12 @@ function App() {
                       {isInstall ? t.installation : isInstallSf ? t.installSandFinish : t.sandFinish}
                     </div>
                   </div>
+                  {job.status === "completed" && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#15803d", marginBottom: 8 }}>{t.completed}</div>
+                  )}
+                  {job.status === "archived" && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gray-500)", marginBottom: 8 }}>{t.archived}</div>
+                  )}
                   <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                     <div style={{ flex: 1, height: 6, background: "var(--gray-100)", borderRadius: 3, overflow: "hidden" }}>
                       <div style={{
@@ -811,6 +831,22 @@ function App() {
                 onChange={v => updateJob(selectedJob.id, { progress: v })}
                 t={t}
               />
+            )}
+            {selectedJob.status !== "completed" && selectedJob.status !== "archived" && (
+              <button
+                onClick={() => updateJob(selectedJob.id, { status: "completed", progress: 100 })}
+                style={{
+                  width: "100%",
+                  background: "#16a34a",
+                  color: "white",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  marginBottom: 10,
+                }}>
+                {t.markComplete}
+              </button>
             )}
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
               {t.checklist} — {doneCount}/{checklist.length}
