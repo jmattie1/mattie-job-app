@@ -96,6 +96,8 @@ const T = {
     finishType: "Finish Type",
     installType: "Install Type",
     product: "Product",
+    completionReport: "Completion Report",
+    viewPdf: "View PDF",
     customer: "Customer",
     address: "Address",
     phone: "Phone",
@@ -172,6 +174,8 @@ const T = {
     finishType: "Tipo de Acabado",
     installType: "Tipo de Instalación",
     product: "Producto",
+    completionReport: "Reporte Final",
+    viewPdf: "Ver PDF",
     customer: "Cliente",
     address: "Dirección",
     phone: "Teléfono",
@@ -501,6 +505,7 @@ function App() {
         installType: j.installType || "",
         finishType: j.finishType || "",
         product: j.product || "",
+        reportPdfUrl: j.reportPdfUrl || "",
         date: j.date || new Date().toISOString(),
         checkedItems: j.checkedItems || {},
         progress: Number(j.progress || 0),
@@ -913,10 +918,15 @@ function App() {
                 [t.woodSpecies, selectedJob.woodSpecies],
                 [t.product, selectedJob.product],
                 [t.finishType, selectedJob.finishType],
+                [t.completionReport, selectedJob.reportPdfUrl ? (
+                  <a href={selectedJob.reportPdfUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
+                    {t.viewPdf}
+                  </a>
+                ) : ""],
               ].filter(([, v]) => v).map(([label, value], i) => (
                 <div key={i} style={{
                   display: "flex", justifyContent: "space-between", padding: "10px 0",
-                  borderBottom: i < 5 ? "1px solid var(--gray-100)" : "none",
+                  borderBottom: "1px solid var(--gray-100)",
                 }}>
                   <span style={{ fontSize: 13, color: "var(--gray-500)", fontWeight: 500 }}>{label}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, textAlign: "right", maxWidth: "60%" }}>{value}</span>
