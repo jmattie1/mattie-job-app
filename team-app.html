@@ -102,6 +102,9 @@ const T = {
     product: "Product",
     completionReport: "Completion Report",
     viewPdf: "View PDF",
+    estimateSheet: "Estimate sheet",
+    openEstimate: "Open sheet",
+    notAvailable: "—",
     customer: "Customer",
     address: "Address",
     phone: "Phone",
@@ -180,6 +183,9 @@ const T = {
     product: "Producto",
     completionReport: "Reporte Final",
     viewPdf: "Ver PDF",
+    estimateSheet: "Hoja de estimado",
+    openEstimate: "Abrir hoja",
+    notAvailable: "—",
     customer: "Cliente",
     address: "Dirección",
     phone: "Teléfono",
@@ -255,6 +261,49 @@ function getChecklistForJob(jobType) {
   if (jobType === "sandFinish") return SAND_FINISH_CHECKLIST;
   if (jobType === "installSandFinish") return INSTALL_SF_CHECKLIST;
   return INSTALL_CHECKLIST;
+}
+
+function displayOrDash(val, t) {
+  const s = String(val || "").trim();
+  return s ? s : t.notAvailable;
+}
+
+function buildTearSheetRows(job, t) {
+  const rows = [];
+  const jt = job.jobType || "installation";
+  if (jt === "installation") {
+    rows.push([t.installType, displayOrDash(job.installType, t)]);
+    rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+  } else if (jt === "sandFinish") {
+    rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+  } else if (jt === "installSandFinish") {
+    rows.push([t.installType, displayOrDash(job.installType, t)]);
+    rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+  } else {
+    rows.push([t.installType, displayOrDash(job.installType, t)]);
+    rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+  }
+  rows.push([t.sqft, `${Number(job.sqft) || 0} ${t.sqft}`]);
+  rows.push([t.rooms, displayOrDash(job.rooms, t)]);
+  rows.push([t.woodSpecies, displayOrDash(job.woodSpecies, t)]);
+  rows.push([t.product, displayOrDash(job.product, t)]);
+  const sheetUrl = job.sheetUrl && String(job.sheetUrl).trim();
+  if (sheetUrl) {
+    rows.push([t.estimateSheet, (
+      <a href={sheetUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
+        {t.openEstimate}
+      </a>
+    )]);
+  }
+  const reportUrl = job.reportPdfUrl && String(job.reportPdfUrl).trim();
+  if (reportUrl) {
+    rows.push([t.completionReport, (
+      <a href={reportUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
+        {t.viewPdf}
+      </a>
+    )]);
+  }
+  return rows;
 }
 
 // ── Demo data (will be replaced with calendar-driven data) ──────────────────
@@ -500,6 +549,7 @@ function App() {
         id: j.jobId || j.id,
         jobId: j.jobId || j.id,
         sheetId: j.sheetId || "",
+        sheetUrl: j.sheetUrl || "",
         clientName: j.clientName || "Unnamed Client",
         address: j.address || "",
         phone: j.phone || "",
@@ -845,7 +895,7 @@ function App() {
         {/* ── Checklist Tab ── */}
         {activeTab === "checklist" && (
           <div>
-            {isInstall && (
+            {selectedJob.status !== "completed" && selectedJob.status !== "archived" && (
               <ProgressSlider
                 value={selectedJob.progress}
                 onChange={v => updateJob(selectedJob.id, { progress: v })}
@@ -897,7 +947,7 @@ function App() {
               <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, marginBottom: 6 }}>{selectedJob.clientName}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: 14 }}>📍</span>
-                <span style={{ fontSize: 14, color: "var(--gray-600)" }}>{selectedJob.address}</span>
+                <span style={{ fontSize: 14, color: "var(--gray-600)" }}>{displayOrDash(selectedJob.address, t)}</span>
               </div>
               {selectedJob.phone && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -917,22 +967,10 @@ function App() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>
                 {t.jobInfo}
               </div>
-              {[
-                [isInstall ? t.installType : t.finishType, isInstall ? selectedJob.installType : selectedJob.finishType],
-                [t.sqft, `${selectedJob.sqft} ${t.sqft}`],
-                [t.rooms, selectedJob.rooms],
-                [t.woodSpecies, selectedJob.woodSpecies],
-                [t.product, selectedJob.product],
-                [t.finishType, selectedJob.finishType],
-                [t.completionReport, selectedJob.reportPdfUrl ? (
-                  <a href={selectedJob.reportPdfUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
-                    {t.viewPdf}
-                  </a>
-                ) : ""],
-              ].filter(([, v]) => v).map(([label, value], i) => (
+              {buildTearSheetRows(selectedJob, t).map(([label, value], i, arr) => (
                 <div key={i} style={{
                   display: "flex", justifyContent: "space-between", padding: "10px 0",
-                  borderBottom: "1px solid var(--gray-100)",
+                  borderBottom: i < arr.length - 1 ? "1px solid var(--gray-100)" : "none",
                 }}>
                   <span style={{ fontSize: 13, color: "var(--gray-500)", fontWeight: 500 }}>{label}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, textAlign: "right", maxWidth: "60%" }}>{value}</span>
