@@ -302,15 +302,17 @@ const SAND_FINISH_STAIN_CHECKLIST = [
   "sf_cleanUp", "sf_reconnectPower", "sf_pullPlastic", "sf_blowOutside", "sf_leaveKit"
 ];
 
-function getSandFinishChecklistForFinishType(finishType) {
+function getSandFinishChecklistForFinishType(finishType, stainColor) {
   const ft = String(finishType || "").trim().toLowerCase();
+  const hasStainColor = String(stainColor || "").trim().length > 0;
+  if (hasStainColor) return SAND_FINISH_STAIN_CHECKLIST;
   if (ft.indexOf("stain") !== -1) return SAND_FINISH_STAIN_CHECKLIST;
   return SAND_FINISH_NATURAL_CHECKLIST;
 }
 
 function getChecklistForJob(job) {
   const jobType = job && job.jobType ? job.jobType : "installation";
-  const sandChecklist = getSandFinishChecklistForFinishType(job && job.finishType);
+  const sandChecklist = getSandFinishChecklistForFinishType(job && job.finishType, job && job.stainColor);
   if (jobType === "sandFinish") return sandChecklist;
   if (jobType === "installSandFinish") return [...INSTALL_CHECKLIST, ...sandChecklist];
   return INSTALL_CHECKLIST;
@@ -380,6 +382,18 @@ function sanitizeCheckerName(name) {
   if (n.charAt(0) === "[" || n.charAt(0) === "{") return "";
   if (n.indexOf('"label"') !== -1 || n.indexOf('"qty"') !== -1 || n.indexOf('"unit"') !== -1) return "";
   return n;
+}
+
+function normalizePhotoList(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((p) => {
+      if (!p || typeof p !== "object") return null;
+      const src = String(p.dataUrl || p.url || p.driveUrl || "").trim();
+      if (!src) return null;
+      return { ...p, url: p.url || p.driveUrl || p.dataUrl };
+    })
+    .filter(Boolean);
 }
 
 // ── Demo data (will be replaced with calendar-driven data) ──────────────────
@@ -567,10 +581,11 @@ function CheckItem({ label, checked, onToggle, index }) {
 function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel, addLabel }) {
   const fileRef = useRef(null);
   const openPicker = () => { if (fileRef.current) fileRef.current.click(); };
+  const visiblePhotos = normalizePhotoList(photos);
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-        {title} ({photos.length})
+        {title} ({visiblePhotos.length})
       </div>
       <button
         type="button"
@@ -590,10 +605,10 @@ function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel, addLabel
         {addLabel}
       </button>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-        {photos.map((p, i) => (
+        {visiblePhotos.map((p, i) => (
           <div key={i} style={{ width: 72, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4 }}>
             <div style={{ width: 72, height: 72, borderRadius: 10, overflow: "hidden", border: "2px solid var(--gray-200)", position: "relative" }}>
-              <img src={p.dataUrl || p.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+              <img src={p.dataUrl || p.url || p.driveUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
               {p.uploadStatus === "uploading" && (
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ fontSize: 18, animation: "checkPop 1s infinite" }}>⏳</span>
@@ -711,7 +726,10 @@ function App() {
         date: j.date || new Date().toISOString(),
         checkedItems: j.checkedItems || {},
         progress: Number(j.progress || 0),
-        photos: j.photos || { before: [], after: [] },
+        photos: {
+          before: normalizePhotoList(j && j.photos && j.photos.before),
+          after: normalizePhotoList(j && j.photos && j.photos.after),
+        },
         status: j.status || "active",
       }));
       setJobs(normalized);
