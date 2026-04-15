@@ -311,14 +311,6 @@ function buildTearSheetRows(job, t) {
       </a>
     )]);
   }
-  const reportUrl = job.reportPdfUrl && String(job.reportPdfUrl).trim();
-  if (reportUrl) {
-    rows.push([t.completionReport, (
-      <a href={reportUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
-        {t.viewPdf}
-      </a>
-    )]);
-  }
   return rows;
 }
 
@@ -329,14 +321,6 @@ function buildTearSheetLinkRows(job, t) {
     rows.push([t.estimateSheet, (
       <a href={sheetUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
         {t.openEstimate}
-      </a>
-    )]);
-  }
-  const reportUrl = job.reportPdfUrl && String(job.reportPdfUrl).trim();
-  if (reportUrl) {
-    rows.push([t.completionReport, (
-      <a href={reportUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
-        {t.viewPdf}
       </a>
     )]);
   }
