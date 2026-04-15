@@ -112,6 +112,12 @@ const T = {
     expandDetails: "Show details",
     hideDetails: "Hide details",
     vents: "Vents",
+    workTypeShort: "Work type",
+    tearUpShort: "Tear-up",
+    tapRoomList: "Tap for room list",
+    tapTearUpList: "Tap for tear-up by room",
+    tapVentList: "Tap for vent details",
+    roomListPartial: "Names only — save estimate & sync for full details",
     confirmMarkComplete: "Mark this job complete?",
     yesComplete: "Yes, complete",
     cancel: "Cancel",
@@ -214,6 +220,12 @@ const T = {
     expandDetails: "Mostrar detalles",
     hideDetails: "Ocultar detalles",
     vents: "Ventilas",
+    workTypeShort: "Tipo de trabajo",
+    tearUpShort: "Remoción",
+    tapRoomList: "Toca para ver habitaciones",
+    tapTearUpList: "Toca remoción por habitación",
+    tapVentList: "Toca detalles de ventilas",
+    roomListPartial: "Solo nombres — guarda y sincroniza para detalles",
     confirmMarkComplete: "¿Marcar este trabajo como completo?",
     yesComplete: "Sí, completar",
     cancel: "Cancelar",
@@ -416,30 +428,37 @@ function normalizeSummaryLinesForCrew(lines) {
   });
 }
 
-function parseRoomRowsForDetails(job) {
-  if (Array.isArray(job && job.rooms) && job.rooms.length > 0) return job.rooms;
-  const raw = String((job && job.rooms) || "").trim();
+/** Rooms from API (Measurements) or fallback to comma-separated room names from roomsSummary. */
+function getRoomsForJob(job) {
+  const fromApi = Array.isArray(job && job.rooms) ? job.rooms : [];
+  if (fromApi.length > 0) {
+    return fromApi.map(function(r) {
+      var sq = typeof r.sqft === "number" ? r.sqft : parseFloat(r.sqft);
+      return {
+        name: String(r.name || "").trim() || "Room",
+        workType: String(r.workType || "").trim(),
+        tearUp: String(r.tearUp || "None").trim() || "None",
+        sqft: Number.isFinite(sq) ? sq : 0
+      };
+    });
+  }
+  var raw = String((job && job.roomsSummary) || "").trim();
   if (!raw) return [];
-  return raw.split(",").map(r => ({ name: String(r || "").trim(), workType: "", tearUp: "None", sqft: 0 })).filter(r => r.name);
+  return raw.split(",").map(function(s) { return String(s || "").trim(); }).filter(Boolean).map(function(name) {
+    return { name: name, workType: "", tearUp: "None", sqft: 0 };
+  });
 }
 
-function buildExpandedDetailRows(line, job) {
-  const label = String(line && line.label || "").trim();
-  const rooms = parseRoomRowsForDetails(job);
-  if (label === "Total Project Sq Ft") {
-    return rooms.map((r) => `${r.name || "Room"} — ${r.workType || "Service TBD"}${r.sqft ? ` (${r.sqft} sq ft)` : ""}`);
-  }
-  if (label === "Vents") {
-    const raw = String((job && job.ventsRaw) || "").trim();
-    if (raw) return raw.split(",").map(s => String(s || "").trim()).filter(Boolean);
-    return [];
-  }
-  if (label === "Tear-Up" || label === "Tear-Up Sq Ft") {
-    return rooms
-      .filter((r) => String(r.tearUp || "None").trim().toLowerCase() !== "none")
-      .map((r) => `${r.name || "Room"} — ${r.tearUp || "Tear-up"}${r.sqft ? ` (${r.sqft} sq ft)` : ""}`);
-  }
-  return [];
+function tearUpRoomsForJob(job) {
+  return getRoomsForJob(job).filter(function(r) {
+    return String(r.tearUp || "None").trim().toLowerCase() !== "none";
+  });
+}
+
+function ventDetailLines(job) {
+  var raw = String((job && job.ventsRaw) || "").trim();
+  if (!raw) return [];
+  return raw.split(",").map(function(s) { return String(s || "").trim(); }).filter(Boolean);
 }
 
 // ── Demo data (will be replaced with calendar-driven data) ──────────────────
@@ -731,6 +750,7 @@ function App() {
   const [serverError, setServerError] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [confirmComplete, setConfirmComplete] = useState(false);
+  const [jobInfoSummaryOpen, setJobInfoSummaryOpen] = useState({});
 
   const t = T[lang];
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -791,7 +811,7 @@ function App() {
   // Load saved jobs only — full calendar sync runs when the user taps Sync (avoids timeout on open).
   useEffect(() => { fetchCrewJobs(false); }, [fetchCrewJobs]);
 
-  useEffect(() => { setConfirmComplete(false); }, [selectedJobId]);
+  useEffect(() => { setConfirmComplete(false); setJobInfoSummaryOpen({}); }, [selectedJobId]);
 
   const persistCrewJobUpdate = useCallback(async (jobId, patch) => {
     if (!APPS_SCRIPT_URL || !jobId) return;
@@ -1271,8 +1291,39 @@ function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, color: NAVY, marginBottom: 4 }}>{t.qbLineItems}</div>
                 <div style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>{t.qbLineItemsSub}</div>
                 {normalizeSummaryLinesForCrew(selectedJob.summaryLines).map((line, i, arr) => {
-                  const detailRows = buildExpandedDetailRows(line, selectedJob);
-                  const hasDetailRows = detailRows.length > 0;
+                  const lab = String(line.label || "").trim();
+                  const sumKey = "sl-" + i + "-" + lab.replace(/\s+/g, "-");
+                  const open = !!jobInfoSummaryOpen[sumKey];
+                  const rooms = getRoomsForJob(selectedJob);
+                  const tearUps = tearUpRoomsForJob(selectedJob);
+                  const ventLines = ventDetailLines(selectedJob);
+                  const qtyNum = line.qty !== null && line.qty !== undefined ? Number(line.qty) : 0;
+
+                  const showRoomMenu = lab === "Total Project Sq Ft" && rooms.length > 0;
+                  const showTearMenu = lab === "Tear-Up" && (tearUps.length > 0 || qtyNum > 0);
+                  const showVentMenu = lab === "Vents" && (ventLines.length > 0 || qtyNum > 0);
+
+                  const roomNamesOnly = rooms.length > 0 && rooms.every(function(r) { return !String(r.workType || "").trim(); });
+
+                  const toggleBtn = {
+                    width: "100%",
+                    textAlign: "left",
+                    marginTop: 8,
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: "1px solid var(--gray-200)",
+                    background: "var(--gray-50)",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: NAVY,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent",
+                  };
+
                   return (
                   <div key={i} style={{ borderBottom: i < arr.length - 1 ? "1px solid #f0f0f0" : "none", paddingBottom: 12, marginBottom: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -1281,16 +1332,103 @@ function App() {
                         <div style={{ fontWeight: 700, color: ORANGE, fontSize: 14, whiteSpace: "nowrap" }}>{line.qty} {line.unit}</div>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: "#666", marginTop: 3, lineHeight: 1.4 }}>{line.desc}</div>
-                    {hasDetailRows && (
-                      <details style={{ marginTop: 8 }}>
-                        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--blue)" }}>
-                          {t.expandDetails}
-                        </summary>
-                        <ul style={{ margin: "8px 0 0 18px", padding: 0, color: "#555", fontSize: 12, lineHeight: 1.5 }}>
-                          {detailRows.map((row, idx) => <li key={idx}>{row}</li>)}
-                        </ul>
-                      </details>
+
+                    {showRoomMenu ? (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setJobInfoSummaryOpen(function(prev) { return Object.assign({}, prev, { [sumKey]: !prev[sumKey] }); })}
+                          style={toggleBtn}
+                          aria-expanded={open}
+                        >
+                          <span>{line.desc || t.tapRoomList}</span>
+                          <span style={{ fontSize: 12, color: "var(--gray-500)" }}>{open ? "▲" : "▼"}</span>
+                        </button>
+                        {open && (
+                          <div style={{ marginTop: 10, padding: 12, background: "white", borderRadius: 10, border: "1px solid var(--gray-200)" }}>
+                            {roomNamesOnly && (
+                              <div style={{ fontSize: 11, color: "#b45309", marginBottom: 10, lineHeight: 1.4 }}>{t.roomListPartial}</div>
+                            )}
+                            {rooms.map(function(r, ri) {
+                              return (
+                                <div key={ri} style={{ padding: "10px 0", borderBottom: ri < rooms.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
+                                  <div style={{ fontWeight: 800, fontSize: 14, color: NAVY }}>{r.name}</div>
+                                  <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 4 }}>
+                                    <span style={{ fontWeight: 700 }}>{t.workTypeShort}:</span>{" "}
+                                    {String(r.workType || "").trim() ? r.workType : t.notAvailable}
+                                  </div>
+                                  {r.sqft > 0 && (
+                                    <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: "#666", marginTop: 3, lineHeight: 1.4 }}>{line.desc}</div>
+                    )}
+
+                    {showTearMenu && (
+                      <div style={{ marginTop: showRoomMenu ? 10 : 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => setJobInfoSummaryOpen(function(prev) { var k = sumKey + "-tear"; return Object.assign({}, prev, { [k]: !prev[k] }); })}
+                          style={toggleBtn}
+                          aria-expanded={!!jobInfoSummaryOpen[sumKey + "-tear"]}
+                        >
+                          <span>{t.tapTearUpList}</span>
+                          <span style={{ fontSize: 12, color: "var(--gray-500)" }}>{jobInfoSummaryOpen[sumKey + "-tear"] ? "▲" : "▼"}</span>
+                        </button>
+                        {jobInfoSummaryOpen[sumKey + "-tear"] && (
+                          <div style={{ marginTop: 10, padding: 12, background: "white", borderRadius: 10, border: "1px solid var(--gray-200)" }}>
+                            {tearUps.length === 0 ? (
+                              <div style={{ fontSize: 12, color: "var(--gray-600)", lineHeight: 1.5 }}>{t.roomListPartial}</div>
+                            ) : (
+                              tearUps.map(function(r, ti) {
+                                return (
+                                  <div key={ti} style={{ padding: "10px 0", borderBottom: ti < tearUps.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
+                                    <div style={{ fontWeight: 800, fontSize: 14, color: NAVY }}>{r.name}</div>
+                                    <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 4 }}>
+                                      <span style={{ fontWeight: 700 }}>{t.tearUpShort}:</span>{" "}
+                                      {String(r.tearUp || "").trim() ? r.tearUp : t.notAvailable}
+                                    </div>
+                                    {r.sqft > 0 && (
+                                      <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {showVentMenu && (
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => setJobInfoSummaryOpen(function(prev) { var k = sumKey + "-vent"; return Object.assign({}, prev, { [k]: !prev[k] }); })}
+                          style={toggleBtn}
+                          aria-expanded={!!jobInfoSummaryOpen[sumKey + "-vent"]}
+                        >
+                          <span>{t.tapVentList}</span>
+                          <span style={{ fontSize: 12, color: "var(--gray-500)" }}>{jobInfoSummaryOpen[sumKey + "-vent"] ? "▲" : "▼"}</span>
+                        </button>
+                        {jobInfoSummaryOpen[sumKey + "-vent"] && (
+                          <div style={{ marginTop: 10, padding: 12, background: "white", borderRadius: 10, border: "1px solid var(--gray-200)", fontSize: 12, color: "var(--gray-700)", lineHeight: 1.5 }}>
+                            {ventLines.length === 0 ? (
+                              <span>{line.desc}</span>
+                            ) : (
+                              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                {ventLines.map(function(v, vi) { return <li key={vi}>{v}</li>; })}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )})}
