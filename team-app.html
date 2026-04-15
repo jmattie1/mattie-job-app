@@ -331,6 +331,15 @@ function buildTearSheetLinkRows(job, t) {
   return rows;
 }
 
+function sanitizeCheckerName(name) {
+  const n = String(name || "").trim();
+  if (!n) return "";
+  // Guard against accidental JSON/blob values from older schema mismatch.
+  if (n.charAt(0) === "[" || n.charAt(0) === "{") return "";
+  if (n.indexOf('"label"') !== -1 || n.indexOf('"qty"') !== -1 || n.indexOf('"unit"') !== -1) return "";
+  return n;
+}
+
 // ── Demo data (will be replaced with calendar-driven data) ──────────────────
 const DEMO_JOBS = [];
 
@@ -654,7 +663,7 @@ function App() {
         finishType: j.finishType || "",
         product: j.product || "",
         reportPdfUrl: j.reportPdfUrl || "",
-        checkerName: j.checkerName || "",
+        checkerName: sanitizeCheckerName(j.checkerName || ""),
         summaryLines: Array.isArray(j.summaryLines) ? j.summaryLines : [],
         date: j.date || new Date().toISOString(),
         checkedItems: j.checkedItems || {},
@@ -702,11 +711,11 @@ function App() {
   const toggleCheck = (jobId, itemKey) => {
     setJobs(prev => prev.map(j => {
       if (j.id !== jobId) return j;
-      let checkerName = String(j.checkerName || "").trim();
+      let checkerName = sanitizeCheckerName(j.checkerName || "");
       if (!checkerName) {
         const entered = window.prompt(t.enterNamePrompt, "");
         if (entered === null) return j; // user cancelled prompt
-        checkerName = String(entered || "").trim();
+        checkerName = sanitizeCheckerName(entered || "");
         if (!checkerName) return j;
       }
       const checked = { ...j.checkedItems, [itemKey]: !j.checkedItems[itemKey] };
