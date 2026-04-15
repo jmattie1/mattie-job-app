@@ -702,7 +702,8 @@ function App() {
     try {
       const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // text/plain avoids a CORS preflight that can fail on iOS Safari + Apps Script.
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "teamPhotos",
           jobId: jid,
@@ -716,12 +717,15 @@ function App() {
           }],
         }),
       });
-      const json = await res.json();
+      const raw = await res.text();
+      let json = null;
+      try { json = JSON.parse(raw); } catch {}
+      const ok = !!(res.ok && json && json.success);
       setJobs(prev => prev.map(j => {
         if (j.id !== jid) return j;
         const updated = j.photos[type].map(p =>
           p.timestamp === photoData.timestamp
-            ? { ...p, uploadStatus: json.success ? "done" : "error", driveUrl: (json.saved && json.saved[0]) ? json.saved[0].driveUrl : undefined }
+            ? { ...p, uploadStatus: ok ? "done" : "error", driveUrl: (json && json.saved && json.saved[0]) ? json.saved[0].driveUrl : undefined }
             : p
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
