@@ -161,6 +161,7 @@ const T = {
     sf_sealer: "Sealer",
     sf_stain: "Stain",
     sf_stainDryCheck: "Stain dry check",
+    stainColorManual: "Stain: ______",
     sf_firstCoat: "First Coat",
     sf_buff2: "Buff",
     sf_finalCoat: "Final coat",
@@ -258,6 +259,7 @@ const T = {
     sf_sealer: "Sellador",
     sf_stain: "Tinte",
     sf_stainDryCheck: "Revisión de secado del tinte",
+    stainColorManual: "Tinte: ______",
     sf_firstCoat: "Primera capa",
     sf_buff2: "Pulido",
     sf_finalCoat: "Capa final",
@@ -310,6 +312,13 @@ function getChecklistForJob(job) {
   if (jobType === "sandFinish") return sandChecklist;
   if (jobType === "installSandFinish") return [...INSTALL_CHECKLIST, ...sandChecklist];
   return INSTALL_CHECKLIST;
+}
+
+function getChecklistItemLabel(job, key, t) {
+  if (key !== "sf_stain") return t[key];
+  const color = String((job && job.stainColor) || "").trim();
+  if (color) return `${t.sf_stain} (${color})`;
+  return t.stainColorManual;
 }
 
 function displayOrDash(val, t) {
@@ -689,6 +698,7 @@ function App() {
         woodSpecies: j.woodSpecies || "",
         installType: j.installType || "",
         finishType: j.finishType || "",
+        stainColor: j.stainColor || "",
         product: j.product || "",
         reportPdfUrl: j.reportPdfUrl || "",
         checkerName: sanitizeCheckerName(j.checkerName || ""),
@@ -1147,7 +1157,7 @@ function App() {
             {checklist.map((key, i) => (
               <CheckItem
                 key={key}
-                label={t[key]}
+                label={getChecklistItemLabel(selectedJob, key, t)}
                 checked={!!selectedJob.checkedItems[key]}
                 onToggle={() => toggleCheck(selectedJob.id, key)}
                 index={i}
