@@ -113,6 +113,7 @@ const T = {
     cancel: "Cancel",
     undoComplete: "Undo complete",
     retryUpload: "Retry upload",
+    addPhotos: "Add photos",
     customer: "Customer",
     address: "Address",
     phone: "Phone",
@@ -201,6 +202,7 @@ const T = {
     cancel: "Cancelar",
     undoComplete: "Deshacer completo",
     retryUpload: "Reintentar",
+    addPhotos: "Agregar fotos",
     customer: "Cliente",
     address: "Dirección",
     phone: "Teléfono",
@@ -299,7 +301,6 @@ function buildTearSheetRows(job, t) {
     rows.push([t.finishType, displayOrDash(job.finishType, t)]);
   }
   rows.push([t.sqft, `${Number(job.sqft) || 0} ${t.sqft}`]);
-  rows.push([t.rooms, displayOrDash(job.rooms, t)]);
   rows.push([t.woodSpecies, displayOrDash(job.woodSpecies, t)]);
   rows.push([t.product, displayOrDash(job.product, t)]);
   const sheetUrl = job.sheetUrl && String(job.sheetUrl).trim();
@@ -496,13 +497,31 @@ function CheckItem({ label, checked, onToggle, index }) {
 }
 
 // Photo section
-function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel }) {
+function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel, addLabel }) {
   const fileRef = useRef(null);
+  const openPicker = () => { if (fileRef.current) fileRef.current.click(); };
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
         {title} ({photos.length})
       </div>
+      <button
+        type="button"
+        onClick={openPicker}
+        style={{
+          width: "100%",
+          marginBottom: 12,
+          padding: "14px 16px",
+          borderRadius: 10,
+          background: NAVY,
+          color: "white",
+          fontSize: 15,
+          fontWeight: 700,
+          border: "none",
+          boxShadow: "var(--shadow)",
+        }}>
+        {addLabel}
+      </button>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
         {photos.map((p, i) => (
           <div key={i} style={{ width: 72, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4 }}>
@@ -538,18 +557,21 @@ function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel }) {
           </div>
         ))}
         <button
-          onClick={() => { if (fileRef.current) fileRef.current.click(); }}
+          type="button"
+          onClick={openPicker}
           style={{
             width: 72, height: 72, borderRadius: 10, border: "2px dashed var(--gray-300)",
             background: "var(--gray-50)", display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center", gap: 2,
             color: "var(--gray-400)", fontSize: 24,
-          }}>
+          }}
+          aria-label={addLabel}
+        >
           <span>📷</span>
           <span style={{ fontSize: 9, fontWeight: 600 }}>+</span>
         </button>
       </div>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple
+      <input ref={fileRef} type="file" accept="image/*" multiple
         style={{ display: "none" }}
         onChange={e => {
           Array.from(e.target.files).forEach(file => {
@@ -1137,6 +1159,7 @@ function App() {
               onAdd={photo => addPhoto(selectedJob, "before", photo)}
               onRetryPhoto={photo => retryPhotoUpload(selectedJob, "before", photo)}
               retryLabel={t.retryUpload}
+              addLabel={t.addPhotos}
             />
             <PhotoSection
               title={t.afterPhotos}
@@ -1144,6 +1167,7 @@ function App() {
               onAdd={photo => addPhoto(selectedJob, "after", photo)}
               onRetryPhoto={photo => retryPhotoUpload(selectedJob, "after", photo)}
               retryLabel={t.retryUpload}
+              addLabel={t.addPhotos}
             />
           </div>
         )}
