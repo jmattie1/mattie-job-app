@@ -99,6 +99,7 @@ const T = {
     rooms: "Rooms",
     woodSpecies: "Wood Species",
     finishType: "Finish Type",
+    stainColor: "Stain Color",
     installType: "Install Type",
     product: "Product",
     completionReport: "Completion Report",
@@ -160,7 +161,7 @@ const T = {
     sf_buff1: "Buff",
     sf_sealer: "Sealer",
     sf_stain: "Stain",
-    sf_stainDryCheck: "Stain dry check",
+    sf_waterPop: "Water pop",
     stainColorManual: "Stain: ______",
     sf_firstCoat: "First Coat",
     sf_buff2: "Buff",
@@ -197,6 +198,7 @@ const T = {
     rooms: "Habitaciones",
     woodSpecies: "Tipo de Madera",
     finishType: "Tipo de Acabado",
+    stainColor: "Color de Tinte",
     installType: "Tipo de Instalación",
     product: "Producto",
     completionReport: "Reporte Final",
@@ -258,7 +260,7 @@ const T = {
     sf_buff1: "Pulido",
     sf_sealer: "Sellador",
     sf_stain: "Tinte",
-    sf_stainDryCheck: "Revisión de secado del tinte",
+    sf_waterPop: "Water pop",
     stainColorManual: "Tinte: ______",
     sf_firstCoat: "Primera capa",
     sf_buff2: "Pulido",
@@ -296,7 +298,7 @@ const SAND_FINISH_STAIN_CHECKLIST = [
   "sf_prep", "sf_hangPlastic", "sf_tapeOff",
   "sf_bigCut1", "sf_bigCut2", "sf_trowelFill", "sf_bigCut3",
   "sf_edgerCut1", "sf_edgerCut2", "sf_edgerCut3",
-  "sf_scraping", "sf_buff1", "sf_stain", "sf_stainDryCheck", "sf_sealer", "sf_firstCoat", "sf_buff2", "sf_finalCoat",
+  "sf_scraping", "sf_buff1", "sf_stain", "sf_waterPop", "sf_firstCoat", "sf_buff2", "sf_finalCoat",
   "sf_cleanUp", "sf_reconnectPower", "sf_pullPlastic", "sf_blowOutside", "sf_leaveKit"
 ];
 
@@ -334,12 +336,15 @@ function buildTearSheetRows(job, t) {
     rows.push([t.finishType, displayOrDash(job.finishType, t)]);
   } else if (jt === "sandFinish") {
     rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+    rows.push([t.stainColor, displayOrDash(job.stainColor, t)]);
   } else if (jt === "installSandFinish") {
     rows.push([t.installType, displayOrDash(job.installType, t)]);
     rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+    rows.push([t.stainColor, displayOrDash(job.stainColor, t)]);
   } else {
     rows.push([t.installType, displayOrDash(job.installType, t)]);
     rows.push([t.finishType, displayOrDash(job.finishType, t)]);
+    rows.push([t.stainColor, displayOrDash(job.stainColor, t)]);
   }
   rows.push([t.sqft, `${Number(job.sqft) || 0} ${t.sqft}`]);
   rows.push([t.woodSpecies, displayOrDash(job.woodSpecies, t)]);
