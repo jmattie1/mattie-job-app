@@ -109,6 +109,9 @@ const T = {
     notAvailable: "—",
     qbLineItems: "QB Line Items",
     qbLineItemsSub: "What goes into QuickBooks",
+    expandDetails: "Show details",
+    hideDetails: "Hide details",
+    vents: "Vents",
     confirmMarkComplete: "Mark this job complete?",
     yesComplete: "Yes, complete",
     cancel: "Cancel",
@@ -208,6 +211,9 @@ const T = {
     notAvailable: "—",
     qbLineItems: "Líneas QB",
     qbLineItemsSub: "Lo que va a QuickBooks",
+    expandDetails: "Mostrar detalles",
+    hideDetails: "Ocultar detalles",
+    vents: "Ventilas",
     confirmMarkComplete: "¿Marcar este trabajo como completo?",
     yesComplete: "Sí, completar",
     cancel: "Cancelar",
@@ -394,6 +400,46 @@ function normalizePhotoList(list) {
       return { ...p, url: p.url || p.driveUrl || p.dataUrl };
     })
     .filter(Boolean);
+}
+
+function normalizeSummaryLinesForCrew(lines) {
+  const src = Array.isArray(lines) ? lines : [];
+  const hasInstallSqFt = src.some(l => String(l && l.label || "").trim() === "Installation Sq Ft");
+  const hasSandSqFt = src.some(l => String(l && l.label || "").trim() === "Sand & Finish Sq Ft");
+  const hasTearUp = src.some(l => String(l && l.label || "").trim() === "Tear-Up");
+  return src.filter((line) => {
+    const label = String(line && line.label || "").trim();
+    if (label === "Installation" && hasInstallSqFt) return false;
+    if (label === "Sand & Finish" && hasSandSqFt) return false;
+    if (label === "Tear-Up Sq Ft" && hasTearUp) return false;
+    return true;
+  });
+}
+
+function parseRoomRowsForDetails(job) {
+  if (Array.isArray(job && job.rooms) && job.rooms.length > 0) return job.rooms;
+  const raw = String((job && job.rooms) || "").trim();
+  if (!raw) return [];
+  return raw.split(",").map(r => ({ name: String(r || "").trim(), workType: "", tearUp: "None", sqft: 0 })).filter(r => r.name);
+}
+
+function buildExpandedDetailRows(line, job) {
+  const label = String(line && line.label || "").trim();
+  const rooms = parseRoomRowsForDetails(job);
+  if (label === "Total Project Sq Ft") {
+    return rooms.map((r) => `${r.name || "Room"} — ${r.workType || "Service TBD"}${r.sqft ? ` (${r.sqft} sq ft)` : ""}`);
+  }
+  if (label === "Vents") {
+    const raw = String((job && job.ventsRaw) || "").trim();
+    if (raw) return raw.split(",").map(s => String(s || "").trim()).filter(Boolean);
+    return [];
+  }
+  if (label === "Tear-Up" || label === "Tear-Up Sq Ft") {
+    return rooms
+      .filter((r) => String(r.tearUp || "None").trim().toLowerCase() !== "none")
+      .map((r) => `${r.name || "Room"} — ${r.tearUp || "Tear-up"}${r.sqft ? ` (${r.sqft} sq ft)` : ""}`);
+  }
+  return [];
 }
 
 // ── Demo data (will be replaced with calendar-driven data) ──────────────────
@@ -720,6 +766,8 @@ function App() {
         finishType: j.finishType || "",
         stainColor: j.stainColor || "",
         product: j.product || "",
+        rooms: Array.isArray(j.rooms) ? j.rooms : [],
+        ventsRaw: j.ventsRaw || "",
         reportPdfUrl: j.reportPdfUrl || "",
         checkerName: sanitizeCheckerName(j.checkerName || ""),
         summaryLines: Array.isArray(j.summaryLines) ? j.summaryLines : [],
@@ -1222,8 +1270,11 @@ function App() {
               }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: NAVY, marginBottom: 4 }}>{t.qbLineItems}</div>
                 <div style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>{t.qbLineItemsSub}</div>
-                {selectedJob.summaryLines.map((line, i) => (
-                  <div key={i} style={{ borderBottom: i < selectedJob.summaryLines.length - 1 ? "1px solid #f0f0f0" : "none", paddingBottom: 12, marginBottom: 12 }}>
+                {normalizeSummaryLinesForCrew(selectedJob.summaryLines).map((line, i, arr) => {
+                  const detailRows = buildExpandedDetailRows(line, selectedJob);
+                  const hasDetailRows = detailRows.length > 0;
+                  return (
+                  <div key={i} style={{ borderBottom: i < arr.length - 1 ? "1px solid #f0f0f0" : "none", paddingBottom: 12, marginBottom: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                       <div style={{ fontWeight: 700, color: NAVY, fontSize: 14, flex: 1 }}>{line.label}</div>
                       {line.qty !== null && line.qty !== undefined && (
@@ -1231,8 +1282,18 @@ function App() {
                       )}
                     </div>
                     <div style={{ fontSize: 12, color: "#666", marginTop: 3, lineHeight: 1.4 }}>{line.desc}</div>
+                    {hasDetailRows && (
+                      <details style={{ marginTop: 8 }}>
+                        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--blue)" }}>
+                          {t.expandDetails}
+                        </summary>
+                        <ul style={{ margin: "8px 0 0 18px", padding: 0, color: "#555", fontSize: 12, lineHeight: 1.5 }}>
+                          {detailRows.map((row, idx) => <li key={idx}>{row}</li>)}
+                        </ul>
+                      </details>
+                    )}
                   </div>
-                ))}
+                )})}
               </div>
             )}
 
