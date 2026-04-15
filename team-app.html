@@ -114,6 +114,8 @@ const T = {
     undoComplete: "Undo complete",
     retryUpload: "Retry upload",
     addPhotos: "Add photos",
+    checkedBy: "Checked by",
+    enterNamePrompt: "Who is checking off this list? Enter your name:",
     customer: "Customer",
     address: "Address",
     phone: "Phone",
@@ -203,6 +205,8 @@ const T = {
     undoComplete: "Deshacer completo",
     retryUpload: "Reintentar",
     addPhotos: "Agregar fotos",
+    checkedBy: "Revisado por",
+    enterNamePrompt: "Quien esta marcando esta lista? Escribe tu nombre:",
     customer: "Cliente",
     address: "Dirección",
     phone: "Teléfono",
@@ -650,6 +654,7 @@ function App() {
         finishType: j.finishType || "",
         product: j.product || "",
         reportPdfUrl: j.reportPdfUrl || "",
+        checkerName: j.checkerName || "",
         summaryLines: Array.isArray(j.summaryLines) ? j.summaryLines : [],
         date: j.date || new Date().toISOString(),
         checkedItems: j.checkedItems || {},
@@ -697,6 +702,13 @@ function App() {
   const toggleCheck = (jobId, itemKey) => {
     setJobs(prev => prev.map(j => {
       if (j.id !== jobId) return j;
+      let checkerName = String(j.checkerName || "").trim();
+      if (!checkerName) {
+        const entered = window.prompt(t.enterNamePrompt, "");
+        if (entered === null) return j; // user cancelled prompt
+        checkerName = String(entered || "").trim();
+        if (!checkerName) return j;
+      }
       const checked = { ...j.checkedItems, [itemKey]: !j.checkedItems[itemKey] };
       const list = getChecklistForJob(j.jobType);
       const doneCount = list.filter(k => checked[k]).length;
@@ -708,8 +720,8 @@ function App() {
         setTimeout(() => setShowConfetti(false), 2000);
       }
 
-      persistCrewJobUpdate(j.id, { checkedItems: checked, progress });
-      return { ...j, checkedItems: checked, progress };
+      persistCrewJobUpdate(j.id, { checkerName, checkedItems: checked, progress });
+      return { ...j, checkerName, checkedItems: checked, progress };
     }));
   };
 
@@ -1090,6 +1102,11 @@ function App() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gray-500)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
               {t.checklist} — {doneCount}/{checklist.length}
             </div>
+            {selectedJob.checkerName && (
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--gray-600)", marginBottom: 10 }}>
+                {t.checkedBy}: {selectedJob.checkerName}
+              </div>
+            )}
             {checklist.map((key, i) => (
               <CheckItem
                 key={key}
