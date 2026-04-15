@@ -374,6 +374,34 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   ]);
 }
 
+async function downscaleImageDataUrl(dataUrl, maxDim = 1600, quality = 0.78) {
+  if (!dataUrl) return dataUrl;
+  return await new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.width || 0;
+        const h = img.height || 0;
+        if (!w || !h) return resolve(dataUrl);
+        const scale = Math.min(1, maxDim / Math.max(w, h));
+        const tw = Math.max(1, Math.round(w * scale));
+        const th = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0, tw, th);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    } catch {
+      resolve(dataUrl);
+    }
+  });
+}
+
 // ── Components ──────────────────────────────────────────────────────────────
 
 // Language toggle pill
@@ -554,6 +582,11 @@ function PhotoSection({ title, photos, onAdd, onRetryPhoto, retryLabel, addLabel
                 {retryLabel}
               </button>
             )}
+            {p.uploadStatus === "error" && p.uploadError && (
+              <div style={{ fontSize: 9, lineHeight: 1.2, color: "var(--red)", textAlign: "center" }}>
+                {String(p.uploadError)}
+              </div>
+            )}
           </div>
         ))}
         <button
@@ -700,7 +733,8 @@ function App() {
     if (!job || !APPS_SCRIPT_URL) return;
     const jid = job.id || job.jobId;
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
+      const compressedDataUrl = await downscaleImageDataUrl(photoData.dataUrl);
+      const res = await fetchWithTimeout(APPS_SCRIPT_URL, {
         method: "POST",
         // text/plain avoids a CORS preflight that can fail on iOS Safari + Apps Script.
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -710,31 +744,32 @@ function App() {
           sheetId: job.sheetId || "",
           clientName: job.clientName,
           photos: [{
-            base64: photoData.dataUrl,
+            base64: compressedDataUrl,
             type: type,
             fileName: `${type}_${Date.now()}.jpg`,
             mimeType: "image/jpeg",
           }],
         }),
-      });
+      }, 60000);
       const raw = await res.text();
       let json = null;
       try { json = JSON.parse(raw); } catch {}
       const ok = !!(res.ok && json && json.success);
+      const errMsg = ok ? "" : (json && json.error ? json.error : (raw ? String(raw).slice(0, 80) : "Upload failed"));
       setJobs(prev => prev.map(j => {
         if (j.id !== jid) return j;
         const updated = j.photos[type].map(p =>
           p.timestamp === photoData.timestamp
-            ? { ...p, uploadStatus: ok ? "done" : "error", driveUrl: (json && json.saved && json.saved[0]) ? json.saved[0].driveUrl : undefined }
+            ? { ...p, uploadStatus: ok ? "done" : "error", uploadError: errMsg, driveUrl: (json && json.saved && json.saved[0]) ? json.saved[0].driveUrl : undefined }
             : p
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
       }));
-    } catch {
+    } catch (err) {
       setJobs(prev => prev.map(j => {
         if (j.id !== jid) return j;
         const updated = j.photos[type].map(p =>
-          p.timestamp === photoData.timestamp ? { ...p, uploadStatus: "error" } : p
+          p.timestamp === photoData.timestamp ? { ...p, uploadStatus: "error", uploadError: (err && err.message) ? err.message : "Network error" } : p
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
       }));
