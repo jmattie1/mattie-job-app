@@ -146,23 +146,29 @@ const T = {
     i_finalClean: "Final clean & debris removed",
     i_walkthrough: "Final walkthrough with homeowner",
     // Sand & Finish checklist
-    sf_prepSanding: "Prep for sanding — clear room, tape off",
-    sf_bigCut1: "Big machine — 1st cut (36 grit)",
-    sf_bigCut2: "Big machine — 2nd cut (60 grit)",
-    sf_bigCut3: "Big machine — 3rd cut (80/100 grit)",
-    sf_edging: "Edger — all edges & corners done",
-    sf_scraping: "Detail scraping — closets, corners, radiators",
-    sf_screening: "Screen / buff between coats",
-    sf_trowelFiller: "Full trowel filler applied",
-    sf_fillerDry: "Filler dry & re-sanded smooth",
-    sf_vacDust: "Vacuum & tack all dust",
-    sf_sealerStain: "Sealer or stain applied",
-    sf_sealerDry: "Sealer/stain dry — check for issues",
-    sf_firstCoat: "First coat of finish",
-    sf_firstCoatDry: "First coat cured — light screen",
-    sf_secondCoat: "Second coat of finish",
-    sf_finalCure: "Final cure — tape off, fans running",
-    sf_walkthrough: "Final walkthrough with homeowner",
+    sf_prep: "Prep",
+    sf_hangPlastic: "Hang plastic",
+    sf_tapeOff: "Tape off",
+    sf_bigCut1: "Big machine — 1st cut",
+    sf_bigCut2: "Big machine — 2nd cut",
+    sf_trowelFill: "Trowel fill",
+    sf_bigCut3: "Big machine — 3rd cut",
+    sf_edgerCut1: "Edger — 1st cut",
+    sf_edgerCut2: "Edger — 2nd cut",
+    sf_edgerCut3: "Edger — 3rd cut",
+    sf_scraping: "Scraping",
+    sf_buff1: "Buff",
+    sf_sealer: "Sealer",
+    sf_stain: "Stain",
+    sf_stainDryCheck: "Stain dry check",
+    sf_firstCoat: "First Coat",
+    sf_buff2: "Buff",
+    sf_finalCoat: "Final coat",
+    sf_cleanUp: "Clean up",
+    sf_reconnectPower: "Reconnect power",
+    sf_pullPlastic: "Pull down plastic",
+    sf_blowOutside: "Blow off outside work area",
+    sf_leaveKit: "Leave cleaning kit",
     // Achievements
     achvFirstJob: "First Job!",
     achvPhotoPro: "Photo Pro",
@@ -237,23 +243,29 @@ const T = {
     i_finalClean: "Limpieza final y escombros removidos",
     i_walkthrough: "Revisión final con el propietario",
     // Sand & Finish checklist
-    sf_prepSanding: "Preparar para lijado — despejar, cubrir con cinta",
-    sf_bigCut1: "Máquina grande — 1er corte (grano 36)",
-    sf_bigCut2: "Máquina grande — 2do corte (grano 60)",
-    sf_bigCut3: "Máquina grande — 3er corte (grano 80/100)",
-    sf_edging: "Bordeadora — todos los bordes y esquinas",
-    sf_scraping: "Raspado detallado — clósets, esquinas, radiadores",
-    sf_screening: "Cribado / pulido entre capas",
-    sf_trowelFiller: "Masilla de llana completa aplicada",
-    sf_fillerDry: "Masilla seca y re-lijada",
-    sf_vacDust: "Aspirar y limpiar todo el polvo",
-    sf_sealerStain: "Sellador o tinte aplicado",
-    sf_sealerDry: "Sellador/tinte seco — revisar problemas",
-    sf_firstCoat: "Primera capa de acabado",
-    sf_firstCoatDry: "Primera capa curada — cribado ligero",
-    sf_secondCoat: "Segunda capa de acabado",
-    sf_finalCure: "Curado final — cinta puesta, ventiladores",
-    sf_walkthrough: "Revisión final con el propietario",
+    sf_prep: "Preparación",
+    sf_hangPlastic: "Colgar plástico",
+    sf_tapeOff: "Encintar",
+    sf_bigCut1: "Máquina grande — 1er corte",
+    sf_bigCut2: "Máquina grande — 2do corte",
+    sf_trowelFill: "Relleno con llana",
+    sf_bigCut3: "Máquina grande — 3er corte",
+    sf_edgerCut1: "Bordeadora — 1er corte",
+    sf_edgerCut2: "Bordeadora — 2do corte",
+    sf_edgerCut3: "Bordeadora — 3er corte",
+    sf_scraping: "Raspado",
+    sf_buff1: "Pulido",
+    sf_sealer: "Sellador",
+    sf_stain: "Tinte",
+    sf_stainDryCheck: "Revisión de secado del tinte",
+    sf_firstCoat: "Primera capa",
+    sf_buff2: "Pulido",
+    sf_finalCoat: "Capa final",
+    sf_cleanUp: "Limpieza",
+    sf_reconnectPower: "Reconectar energía",
+    sf_pullPlastic: "Quitar plástico",
+    sf_blowOutside: "Soplar área exterior de trabajo",
+    sf_leaveKit: "Dejar kit de limpieza",
     // Achievements
     achvFirstJob: "¡Primer Trabajo!",
     achvPhotoPro: "Pro de Fotos",
@@ -270,17 +282,33 @@ const INSTALL_CHECKLIST = [
   "i_transitions", "i_baseboards", "i_carpetTucked", "i_finalClean", "i_walkthrough"
 ];
 
-const SAND_FINISH_CHECKLIST = [
-  "sf_prepSanding", "sf_bigCut1", "sf_bigCut2", "sf_bigCut3",
-  "sf_edging", "sf_scraping", "sf_screening", "sf_trowelFiller",
-  "sf_fillerDry", "sf_vacDust", "sf_sealerStain", "sf_sealerDry",
-  "sf_firstCoat", "sf_firstCoatDry", "sf_secondCoat", "sf_finalCure", "sf_walkthrough"
+const SAND_FINISH_NATURAL_CHECKLIST = [
+  "sf_prep", "sf_hangPlastic", "sf_tapeOff",
+  "sf_bigCut1", "sf_bigCut2", "sf_trowelFill", "sf_bigCut3",
+  "sf_edgerCut1", "sf_edgerCut2", "sf_edgerCut3",
+  "sf_scraping", "sf_buff1", "sf_sealer", "sf_firstCoat", "sf_buff2", "sf_finalCoat",
+  "sf_cleanUp", "sf_reconnectPower", "sf_pullPlastic", "sf_blowOutside", "sf_leaveKit"
 ];
-const INSTALL_SF_CHECKLIST = [...INSTALL_CHECKLIST, ...SAND_FINISH_CHECKLIST];
 
-function getChecklistForJob(jobType) {
-  if (jobType === "sandFinish") return SAND_FINISH_CHECKLIST;
-  if (jobType === "installSandFinish") return INSTALL_SF_CHECKLIST;
+const SAND_FINISH_STAIN_CHECKLIST = [
+  "sf_prep", "sf_hangPlastic", "sf_tapeOff",
+  "sf_bigCut1", "sf_bigCut2", "sf_trowelFill", "sf_bigCut3",
+  "sf_edgerCut1", "sf_edgerCut2", "sf_edgerCut3",
+  "sf_scraping", "sf_buff1", "sf_stain", "sf_stainDryCheck", "sf_sealer", "sf_firstCoat", "sf_buff2", "sf_finalCoat",
+  "sf_cleanUp", "sf_reconnectPower", "sf_pullPlastic", "sf_blowOutside", "sf_leaveKit"
+];
+
+function getSandFinishChecklistForFinishType(finishType) {
+  const ft = String(finishType || "").trim().toLowerCase();
+  if (ft.indexOf("stain") !== -1) return SAND_FINISH_STAIN_CHECKLIST;
+  return SAND_FINISH_NATURAL_CHECKLIST;
+}
+
+function getChecklistForJob(job) {
+  const jobType = job && job.jobType ? job.jobType : "installation";
+  const sandChecklist = getSandFinishChecklistForFinishType(job && job.finishType);
+  if (jobType === "sandFinish") return sandChecklist;
+  if (jobType === "installSandFinish") return [...INSTALL_CHECKLIST, ...sandChecklist];
   return INSTALL_CHECKLIST;
 }
 
@@ -719,7 +747,7 @@ function App() {
         if (!checkerName) return j;
       }
       const checked = { ...j.checkedItems, [itemKey]: !j.checkedItems[itemKey] };
-      const list = getChecklistForJob(j.jobType);
+      const list = getChecklistForJob(j);
       const doneCount = list.filter(k => checked[k]).length;
       const progress = Math.round((doneCount / list.length) * 100);
 
@@ -880,7 +908,7 @@ function App() {
               const isInstall = !isSandFinish && !isInstallSf;
               const typeColor = isInstall ? "var(--blue)" : GOLD;
               const typeBg = isInstall ? "var(--blue-bg)" : "#fef3c7";
-              const list = getChecklistForJob(job.jobType);
+              const list = getChecklistForJob(job);
               const doneCount = list.filter(k => job.checkedItems[k]).length;
               return (
                 <div
@@ -940,7 +968,7 @@ function App() {
   const isSandFinish = selectedJob.jobType === "sandFinish";
   const isInstallSf = selectedJob.jobType === "installSandFinish";
   const isInstall = !isSandFinish && !isInstallSf;
-  const checklist = getChecklistForJob(selectedJob.jobType);
+  const checklist = getChecklistForJob(selectedJob);
   const typeColor = isInstall ? "var(--blue)" : GOLD;
   const doneCount = checklist.filter(k => selectedJob.checkedItems[k]).length;
 
