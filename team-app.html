@@ -118,6 +118,7 @@ const T = {
     tapTearUpList: "Tap for tear-up by room",
     tapVentList: "Tap for vent details",
     roomListPartial: "Names only — save estimate & sync for full details",
+    roomsEmptyHint: "No room list loaded. Open the estimate sheet, save Measurements, then tap Sync on this screen.",
     confirmMarkComplete: "Mark this job complete?",
     yesComplete: "Yes, complete",
     cancel: "Cancel",
@@ -226,6 +227,7 @@ const T = {
     tapTearUpList: "Toca remoción por habitación",
     tapVentList: "Toca detalles de ventilas",
     roomListPartial: "Solo nombres — guarda y sincroniza para detalles",
+    roomsEmptyHint: "Sin habitaciones. Abre la hoja, guarda Mediciones, luego Sincronizar.",
     confirmMarkComplete: "¿Marcar este trabajo como completo?",
     yesComplete: "Sí, completar",
     cancel: "Cancelar",
@@ -429,19 +431,34 @@ function normalizeSummaryLinesForCrew(lines) {
 }
 
 /** Rooms from API (Measurements) or fallback to comma-separated room names from roomsSummary. */
-function getRoomsForJob(job) {
-  const fromApi = Array.isArray(job && job.rooms) ? job.rooms : [];
-  if (fromApi.length > 0) {
-    return fromApi.map(function(r) {
-      var sq = typeof r.sqft === "number" ? r.sqft : parseFloat(r.sqft);
-      return {
-        name: String(r.name || "").trim() || "Room",
-        workType: String(r.workType || "").trim(),
-        tearUp: String(r.tearUp || "None").trim() || "None",
-        sqft: Number.isFinite(sq) ? sq : 0
-      };
-    });
+function normalizeRoomRow(r) {
+  var sq = typeof r.sqft === "number" ? r.sqft : parseFloat(r.sqft);
+  return {
+    name: String(r.name || "").trim() || "Room",
+    workType: String(r.workType || "").trim(),
+    tearUp: String(r.tearUp || "None").trim() || "None",
+    sqft: Number.isFinite(sq) ? sq : 0
+  };
+}
+
+/** Prefer job.rooms array; else parse roomsJson string from sheet column. */
+function getRoomRowsFromPayload(job) {
+  if (Array.isArray(job && job.rooms) && job.rooms.length > 0) {
+    return job.rooms.map(normalizeRoomRow);
   }
+  var js = job && job.roomsJson;
+  if (typeof js === "string" && js.trim()) {
+    try {
+      var parsed = JSON.parse(js);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(normalizeRoomRow);
+    } catch (e) {}
+  }
+  return [];
+}
+
+function getRoomsForJob(job) {
+  var fromPayload = getRoomRowsFromPayload(job);
+  if (fromPayload.length > 0) return fromPayload;
   var raw = String((job && job.roomsSummary) || "").trim();
   if (!raw) return [];
   return raw.split(",").map(function(s) { return String(s || "").trim(); }).filter(Boolean).map(function(name) {
@@ -770,7 +787,15 @@ function App() {
       const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewJobs&status=all`, { redirect: "follow" }, listTimeout);
       const json = await res.json();
       if (!json.success || !Array.isArray(json.jobs)) throw new Error(json.error || "Invalid crew jobs response");
-      const normalized = json.jobs.map(j => ({
+      const normalized = json.jobs.map(j => {
+        var roomsArr = Array.isArray(j.rooms) ? j.rooms : [];
+        if (roomsArr.length === 0 && typeof j.roomsJson === "string" && j.roomsJson.trim()) {
+          try {
+            var pr = JSON.parse(j.roomsJson);
+            if (Array.isArray(pr)) roomsArr = pr;
+          } catch (e) {}
+        }
+        return {
         id: j.jobId || j.id,
         jobId: j.jobId || j.id,
         sheetId: j.sheetId || "",
@@ -780,13 +805,14 @@ function App() {
         phone: j.phone || "",
         jobType: j.jobType || "installation",
         sqft: Number(j.sqft || 0),
-        rooms: j.roomsSummary || "",
+        roomsSummary: j.roomsSummary || "",
         woodSpecies: j.woodSpecies || "",
         installType: j.installType || "",
         finishType: j.finishType || "",
         stainColor: j.stainColor || "",
         product: j.product || "",
-        rooms: Array.isArray(j.rooms) ? j.rooms : [],
+        rooms: roomsArr,
+        roomsJson: typeof j.roomsJson === "string" ? j.roomsJson : "",
         ventsRaw: j.ventsRaw || "",
         reportPdfUrl: j.reportPdfUrl || "",
         checkerName: sanitizeCheckerName(j.checkerName || ""),
@@ -799,7 +825,8 @@ function App() {
           after: normalizePhotoList(j && j.photos && j.photos.after),
         },
         status: j.status || "active",
-      }));
+      };
+      });
       setJobs(normalized);
     } catch (err) {
       setServerError(err.message || "Could not load jobs");
@@ -1299,9 +1326,10 @@ function App() {
                   const ventLines = ventDetailLines(selectedJob);
                   const qtyNum = line.qty !== null && line.qty !== undefined ? Number(line.qty) : 0;
 
-                  const showRoomMenu = lab === "Total Project Sq Ft" && rooms.length > 0;
-                  const showTearMenu = lab === "Tear-Up" && (tearUps.length > 0 || qtyNum > 0);
-                  const showVentMenu = lab === "Vents" && (ventLines.length > 0 || qtyNum > 0);
+                  const showRoomMenu = lab === "Total Project Sq Ft";
+                  const tearDisplayList = tearUps.length > 0 ? tearUps : rooms;
+                  const showTearMenu = lab === "Tear-Up" && (qtyNum > 0 || rooms.length > 0);
+                  const showVentMenu = lab === "Vents";
 
                   const roomNamesOnly = rooms.length > 0 && rooms.every(function(r) { return !String(r.workType || "").trim(); });
 
@@ -1346,23 +1374,29 @@ function App() {
                         </button>
                         {open && (
                           <div style={{ marginTop: 10, padding: 12, background: "white", borderRadius: 10, border: "1px solid var(--gray-200)" }}>
-                            {roomNamesOnly && (
-                              <div style={{ fontSize: 11, color: "#b45309", marginBottom: 10, lineHeight: 1.4 }}>{t.roomListPartial}</div>
+                            {rooms.length === 0 ? (
+                              <div style={{ fontSize: 12, color: "var(--gray-600)", lineHeight: 1.5 }}>{t.roomsEmptyHint}</div>
+                            ) : (
+                              <div>
+                                {roomNamesOnly && (
+                                  <div style={{ fontSize: 11, color: "#b45309", marginBottom: 10, lineHeight: 1.4 }}>{t.roomListPartial}</div>
+                                )}
+                                {rooms.map(function(r, ri) {
+                                  return (
+                                    <div key={ri} style={{ padding: "10px 0", borderBottom: ri < rooms.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
+                                      <div style={{ fontWeight: 800, fontSize: 14, color: NAVY }}>{r.name}</div>
+                                      <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 4 }}>
+                                        <span style={{ fontWeight: 700 }}>{t.workTypeShort}:</span>{" "}
+                                        {String(r.workType || "").trim() ? r.workType : t.notAvailable}
+                                      </div>
+                                      {r.sqft > 0 && (
+                                        <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
-                            {rooms.map(function(r, ri) {
-                              return (
-                                <div key={ri} style={{ padding: "10px 0", borderBottom: ri < rooms.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
-                                  <div style={{ fontWeight: 800, fontSize: 14, color: NAVY }}>{r.name}</div>
-                                  <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 4 }}>
-                                    <span style={{ fontWeight: 700 }}>{t.workTypeShort}:</span>{" "}
-                                    {String(r.workType || "").trim() ? r.workType : t.notAvailable}
-                                  </div>
-                                  {r.sqft > 0 && (
-                                    <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
-                                  )}
-                                </div>
-                              );
-                            })}
                           </div>
                         )}
                       </div>
@@ -1383,16 +1417,20 @@ function App() {
                         </button>
                         {jobInfoSummaryOpen[sumKey + "-tear"] && (
                           <div style={{ marginTop: 10, padding: 12, background: "white", borderRadius: 10, border: "1px solid var(--gray-200)" }}>
-                            {tearUps.length === 0 ? (
-                              <div style={{ fontSize: 12, color: "var(--gray-600)", lineHeight: 1.5 }}>{t.roomListPartial}</div>
+                            {tearDisplayList.length === 0 ? (
+                              <div style={{ fontSize: 12, color: "var(--gray-600)", lineHeight: 1.5 }}>{t.roomsEmptyHint}</div>
                             ) : (
-                              tearUps.map(function(r, ti) {
+                              tearDisplayList.map(function(r, ti) {
                                 return (
-                                  <div key={ti} style={{ padding: "10px 0", borderBottom: ti < tearUps.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
+                                  <div key={ti} style={{ padding: "10px 0", borderBottom: ti < tearDisplayList.length - 1 ? "1px solid var(--gray-100)" : "none" }}>
                                     <div style={{ fontWeight: 800, fontSize: 14, color: NAVY }}>{r.name}</div>
                                     <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 4 }}>
                                       <span style={{ fontWeight: 700 }}>{t.tearUpShort}:</span>{" "}
-                                      {String(r.tearUp || "").trim() ? r.tearUp : t.notAvailable}
+                                      {(() => {
+                                        var tu = String(r.tearUp || "").trim();
+                                        if (!tu || tu.toLowerCase() === "none") return "None";
+                                        return tu;
+                                      })()}
                                     </div>
                                     {r.sqft > 0 && (
                                       <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
