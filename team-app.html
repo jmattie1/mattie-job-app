@@ -850,6 +850,35 @@ function App() {
     setHydratingJobId(selectedJob.id);
     (async () => {
       try {
+        // Fast fallback: load estimate sheet directly for this job to get room workType/tearUp.
+        if (selectedJob.sheetId) {
+          const resLoad = await fetchWithTimeout(
+            `${APPS_SCRIPT_URL}?action=load&id=${encodeURIComponent(selectedJob.sheetId)}`,
+            { redirect: "follow" },
+            60000
+          );
+          const jLoad = await resLoad.json();
+          if (jLoad && jLoad.success && jLoad.data) {
+            const data = jLoad.data || {};
+            const roomRows = Array.isArray(data.rooms) ? data.rooms : [];
+            if (roomRows.length > 0) {
+              const normalizedRooms = roomRows.map((r) => ({
+                name: String(r.name || "").trim() || "Room",
+                workType: String(r.workType || "").trim(),
+                tearUp: String(r.tearUp || "None").trim() || "None",
+                sqft: Number.parseFloat(r.sqft) || 0,
+              }));
+              const roomsSummary = normalizedRooms.map((r) => r.name).filter(Boolean).join(", ");
+              const ventsRaw = data.extras && data.extras.vents ? String(data.extras.vents) : (selectedJob.ventsRaw || "");
+              setJobs((prev) => prev.map((j) => j.id === selectedJob.id
+                ? { ...j, rooms: normalizedRooms, roomsSummary, ventsRaw }
+                : j
+              ));
+              setHydratingJobId("");
+              return;
+            }
+          }
+        }
         const res = await fetchWithTimeout(
           `${APPS_SCRIPT_URL}?action=crewHydrateJob&jobId=${encodeURIComponent(selectedJob.id)}`,
           { redirect: "follow" },
@@ -1419,6 +1448,14 @@ function App() {
                                         <span style={{ fontWeight: 700 }}>{t.workTypeShort}:</span>{" "}
                                         {String(r.workType || "").trim() ? r.workType : t.notAvailable}
                                       </div>
+                                  <div style={{ fontSize: 12, color: "var(--gray-600)", marginTop: 2 }}>
+                                    <span style={{ fontWeight: 700 }}>{t.tearUpShort}:</span>{" "}
+                                    {(() => {
+                                      var tu = String(r.tearUp || "").trim();
+                                      if (!tu || tu.toLowerCase() === "none") return "None";
+                                      return tu;
+                                    })()}
+                                  </div>
                                       {r.sqft > 0 && (
                                         <div style={{ fontSize: 12, color: ORANGE, marginTop: 2, fontWeight: 600 }}>{r.sqft} {t.sqft}</div>
                                       )}
