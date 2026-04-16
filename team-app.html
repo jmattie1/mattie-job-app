@@ -768,6 +768,8 @@ function App() {
   const [showArchived, setShowArchived] = useState(false);
   const [confirmComplete, setConfirmComplete] = useState(false);
   const [jobInfoSummaryOpen, setJobInfoSummaryOpen] = useState({});
+  const [hydratingJobId, setHydratingJobId] = useState("");
+  const hydrateAttemptRef = useRef({});
 
   const t = T[lang];
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -780,9 +782,7 @@ function App() {
     setLoadingJobs(true);
     setServerError(null);
     try {
-      if (sync) {
-        await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewSync`, { redirect: "follow" }, CREW_SYNC_TIMEOUT_MS);
-      }
+      // Fast mode: manual Sync refreshes list only (calendar trigger handles background updates).
       const listTimeout = sync ? CREW_LIST_AFTER_SYNC_MS : CREW_LIST_ONLY_MS;
       const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=crewJobs&status=all`, { redirect: "follow" }, listTimeout);
       const json = await res.json();
@@ -839,6 +839,33 @@ function App() {
   useEffect(() => { fetchCrewJobs(false); }, [fetchCrewJobs]);
 
   useEffect(() => { setConfirmComplete(false); setJobInfoSummaryOpen({}); }, [selectedJobId]);
+
+  useEffect(() => {
+    if (!APPS_SCRIPT_URL || !selectedJob || activeTab !== "jobInfo") return;
+    if (hydrateAttemptRef.current[selectedJob.id]) return;
+    const rooms = getRoomsForJob(selectedJob);
+    const missingRoomServiceDetails = rooms.length === 0 || rooms.every(r => !String(r.workType || "").trim());
+    if (!missingRoomServiceDetails) return;
+    hydrateAttemptRef.current[selectedJob.id] = true;
+    setHydratingJobId(selectedJob.id);
+    (async () => {
+      try {
+        const res = await fetchWithTimeout(
+          `${APPS_SCRIPT_URL}?action=crewHydrateJob&jobId=${encodeURIComponent(selectedJob.id)}`,
+          { redirect: "follow" },
+          90000
+        );
+        const json = await res.json();
+        if (json && json.success) {
+          await fetchCrewJobs(false);
+        }
+      } catch (_) {
+        // Ignore silently; user can tap Sync to refresh list.
+      } finally {
+        setHydratingJobId("");
+      }
+    })();
+  }, [APPS_SCRIPT_URL, selectedJob, activeTab, fetchCrewJobs]);
 
   const persistCrewJobUpdate = useCallback(async (jobId, patch) => {
     if (!APPS_SCRIPT_URL || !jobId) return;
@@ -1317,6 +1344,9 @@ function App() {
               }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: NAVY, marginBottom: 4 }}>{t.qbLineItems}</div>
                 <div style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>{t.qbLineItemsSub}</div>
+                {hydratingJobId === selectedJob.id && (
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>Refreshing room details...</div>
+                )}
                 {normalizeSummaryLinesForCrew(selectedJob.summaryLines).map((line, i, arr) => {
                   const lab = String(line.label || "").trim();
                   const sumKey = "sl-" + i + "-" + lab.replace(/\s+/g, "-");
