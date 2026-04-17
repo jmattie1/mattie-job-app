@@ -108,6 +108,8 @@ const T = {
     viewPdf: "View PDF",
     estimateSheet: "Estimate sheet",
     openEstimate: "Open sheet",
+    clientFolder: "Client folder (photos & files)",
+    openClientFolder: "Open Drive folder",
     notAvailable: "—",
     qbLineItems: "QB Line Items",
     qbLineItemsSub: "What goes into QuickBooks",
@@ -219,6 +221,8 @@ const T = {
     viewPdf: "Ver PDF",
     estimateSheet: "Hoja de estimado",
     openEstimate: "Abrir hoja",
+    clientFolder: "Carpeta del cliente (fotos y archivos)",
+    openClientFolder: "Abrir carpeta en Drive",
     notAvailable: "—",
     qbLineItems: "Líneas QB",
     qbLineItemsSub: "Lo que va a QuickBooks",
@@ -376,10 +380,18 @@ function buildTearSheetRows(job, t) {
   rows.push([t.woodSpecies, displayOrDash(job.woodSpecies, t)]);
   rows.push([t.product, displayOrDash(job.product, t)]);
   const sheetUrl = job.sheetUrl && String(job.sheetUrl).trim();
+  const folderUrl = job.clientFolderUrl && String(job.clientFolderUrl).trim();
   if (sheetUrl) {
     rows.push([t.estimateSheet, (
       <a href={sheetUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
         {t.openEstimate}
+      </a>
+    )]);
+  }
+  if (folderUrl) {
+    rows.push([t.clientFolder, (
+      <a href={folderUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
+        {t.openClientFolder}
       </a>
     )]);
   }
@@ -389,10 +401,18 @@ function buildTearSheetRows(job, t) {
 function buildTearSheetLinkRows(job, t) {
   const rows = [];
   const sheetUrl = job.sheetUrl && String(job.sheetUrl).trim();
+  const folderUrl = job.clientFolderUrl && String(job.clientFolderUrl).trim();
   if (sheetUrl) {
     rows.push([t.estimateSheet, (
       <a href={sheetUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
         {t.openEstimate}
+      </a>
+    )]);
+  }
+  if (folderUrl) {
+    rows.push([t.clientFolder, (
+      <a href={folderUrl} target="_blank" rel="noreferrer" style={{ color: "var(--blue)", textDecoration: "none", fontWeight: 700 }}>
+        {t.openClientFolder}
       </a>
     )]);
   }
@@ -831,6 +851,7 @@ function App() {
         jobId: j.jobId || j.id,
         sheetId: j.sheetId || "",
         sheetUrl: j.sheetUrl || "",
+        clientFolderUrl: j.clientFolderUrl || "",
         clientName: j.clientName || "Unnamed Client",
         address: j.address || "",
         phone: j.phone || "",
