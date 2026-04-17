@@ -427,6 +427,7 @@ function normalizeSummaryLinesForCrew(lines) {
   const hasTearUp = src.some(l => String(l && l.label || "").trim() === "Tear-Up");
   return src.filter((line) => {
     const label = String(line && line.label || "").trim();
+    if (label === "Installation Sq Ft" && (line.qty === 0 || line.qty === null)) return false;
     if (label === "Installation" && hasInstallSqFt) return false;
     if (label === "Sand & Finish" && hasSandSqFt) return false;
     if (label === "Tear-Up Sq Ft" && hasTearUp) return false;
@@ -511,6 +512,30 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
     fetch(url, options),
     new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs)),
   ]);
+}
+
+async function postAppsScriptWithRetry(payload, timeoutMs, retries = 2) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetchWithTimeout(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload || {}),
+      }, timeoutMs || 30000);
+      const raw = await res.text();
+      let json = null;
+      try { json = JSON.parse(raw); } catch (_) {}
+      if (res.ok && json && json.success) return { ok: true, json, raw };
+      lastErr = new Error((json && json.error) ? json.error : (raw || "Server rejected request"));
+    } catch (err) {
+      lastErr = err;
+    }
+    if (attempt < retries) {
+      await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 600));
+    }
+  }
+  return { ok: false, error: lastErr || new Error("Request failed after retries") };
 }
 
 async function downscaleImageDataUrl(dataUrl, maxDim = 1600, quality = 0.78) {
@@ -773,7 +798,9 @@ function App() {
   const [confirmComplete, setConfirmComplete] = useState(false);
   const [jobInfoSummaryOpen, setJobInfoSummaryOpen] = useState({});
   const [hydratingJobId, setHydratingJobId] = useState("");
+  const [lastServerSyncAt, setLastServerSyncAt] = useState("");
   const hydrateAttemptRef = useRef({});
+  const backgroundRefreshTimerRef = useRef(null);
 
   const t = T[lang];
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -832,6 +859,7 @@ function App() {
       };
       });
       setJobs(normalized);
+      setLastServerSyncAt(new Date().toISOString());
     } catch (err) {
       setServerError(err.message || "Could not load jobs");
     } finally {
@@ -839,8 +867,37 @@ function App() {
     }
   }, []);
 
+  const queueBackgroundRefresh = useCallback((delayMs) => {
+    if (!APPS_SCRIPT_URL) return;
+    const ms = Number(delayMs) > 0 ? Number(delayMs) : 800;
+    if (backgroundRefreshTimerRef.current) clearTimeout(backgroundRefreshTimerRef.current);
+    backgroundRefreshTimerRef.current = setTimeout(() => {
+      fetchCrewJobs(false);
+    }, ms);
+  }, [fetchCrewJobs]);
+
   // Load saved jobs only — full calendar sync runs when the user taps Sync (avoids timeout on open).
   useEffect(() => { fetchCrewJobs(false); }, [fetchCrewJobs]);
+
+  // Keep devices in sync: refresh when tab regains focus and on a light interval.
+  useEffect(() => {
+    if (!APPS_SCRIPT_URL) return undefined;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchCrewJobs(false);
+    };
+    const onFocus = () => fetchCrewJobs(false);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchCrewJobs(false);
+    }, 45000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+      if (backgroundRefreshTimerRef.current) clearTimeout(backgroundRefreshTimerRef.current);
+    };
+  }, [fetchCrewJobs]);
 
   useEffect(() => { setConfirmComplete(false); setJobInfoSummaryOpen({}); }, [selectedJobId]);
 
@@ -902,20 +959,17 @@ function App() {
 
   const persistCrewJobUpdate = useCallback(async (jobId, patch) => {
     if (!APPS_SCRIPT_URL || !jobId) return;
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: "crewJobUpdate",
-          jobId,
-          ...patch,
-        }),
-      });
-    } catch {
-      // Keep local UI responsive even when network is flaky.
+    const result = await postAppsScriptWithRetry({
+      action: "crewJobUpdate",
+      jobId,
+      ...patch,
+    }, 35000, 2);
+    if (result.ok) {
+      queueBackgroundRefresh(700);
+      return;
     }
-  }, []);
+    setServerError((result.error && result.error.message) ? result.error.message : "Could not save update to server");
+  }, [queueBackgroundRefresh]);
 
   // Update a specific job
   const updateJob = (id, updates) => {
@@ -955,28 +1009,21 @@ function App() {
     const jid = job.id || job.jobId;
     try {
       const compressedDataUrl = await downscaleImageDataUrl(photoData.dataUrl);
-      const res = await fetchWithTimeout(APPS_SCRIPT_URL, {
-        method: "POST",
-        // text/plain avoids a CORS preflight that can fail on iOS Safari + Apps Script.
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "teamPhotos",
-          jobId: jid,
-          sheetId: job.sheetId || "",
-          clientName: job.clientName,
-          photos: [{
-            base64: compressedDataUrl,
-            type: type,
-            fileName: `${type}_${Date.now()}.jpg`,
-            mimeType: "image/jpeg",
-          }],
-        }),
-      }, 60000);
-      const raw = await res.text();
-      let json = null;
-      try { json = JSON.parse(raw); } catch {}
-      const ok = !!(res.ok && json && json.success);
-      const errMsg = ok ? "" : (json && json.error ? json.error : (raw ? String(raw).slice(0, 80) : "Upload failed"));
+      const result = await postAppsScriptWithRetry({
+        action: "teamPhotos",
+        jobId: jid,
+        sheetId: job.sheetId || "",
+        clientName: job.clientName,
+        photos: [{
+          base64: compressedDataUrl,
+          type: type,
+          fileName: `${type}_${Date.now()}.jpg`,
+          mimeType: "image/jpeg",
+        }],
+      }, 70000, 2);
+      const ok = !!result.ok;
+      const json = ok ? result.json : null;
+      const errMsg = ok ? "" : (((result.error && result.error.message) || "Upload failed"));
       setJobs(prev => prev.map(j => {
         if (j.id !== jid) return j;
         const updated = j.photos[type].map(p =>
@@ -986,6 +1033,11 @@ function App() {
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
       }));
+      if (ok) {
+        queueBackgroundRefresh(900);
+      } else {
+        setServerError(errMsg);
+      }
     } catch (err) {
       setJobs(prev => prev.map(j => {
         if (j.id !== jid) return j;
@@ -994,8 +1046,9 @@ function App() {
         );
         return { ...j, photos: { ...j.photos, [type]: updated } };
       }));
+      setServerError((err && err.message) ? err.message : "Photo upload failed");
     }
-  }, []);
+  }, [queueBackgroundRefresh]);
 
   const addPhoto = async (job, type, photoData) => {
     if (!job) return;
@@ -1094,6 +1147,11 @@ function App() {
           {serverError && (
             <div style={{ marginBottom: 10, fontSize: 12, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 10px" }}>
               {serverError}
+            </div>
+          )}
+          {lastServerSyncAt && (
+            <div style={{ marginBottom: 10, fontSize: 11, color: "#475569" }}>
+              Server synced: {new Date(lastServerSyncAt).toLocaleTimeString()}
             </div>
           )}
           </div>
